@@ -319,3 +319,4 @@ start().catch(error => {
 })
 
 export default app
+# Vercel env vars updated
