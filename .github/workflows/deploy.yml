@@ -10,6 +10,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Debug - Show package.json
+        run: cat package.json | grep jsonwebtoken
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
