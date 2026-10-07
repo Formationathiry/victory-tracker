@@ -123,17 +123,26 @@ async function handleGitHubCallback() {
   }
 
   try {
+    console.log('🔐 Processing GitHub callback with code:', code.substring(0, 10) + '...')
+    console.log('📡 API URL:', API_URL)
+
     const response = await fetch(`${API_URL}/auth/github/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code })
     })
 
+    console.log('✅ Response status:', response.status)
+
     if (!response.ok) {
-      throw new Error('Erreur GitHub login')
+      const errorText = await response.text()
+      console.error('❌ Backend error:', errorText)
+      throw new Error(`Erreur serveur: ${response.status}`)
     }
 
     const data = await response.json()
+    console.log('✅ Token received, logging in...')
+
     setAuthToken(data.token)
     currentUser = data.user
 
@@ -143,8 +152,9 @@ async function handleGitHubCallback() {
     showAppPage()
     chargerDonnees()
   } catch (error) {
-    console.error('Erreur:', error)
-    afficherErreur('Erreur lors de la connexion')
+    console.error('❌ Erreur complète:', error)
+    console.error('Message:', error.message)
+    afficherErreur('❌ Erreur: ' + error.message)
   }
 }
 
