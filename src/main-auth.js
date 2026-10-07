@@ -103,11 +103,11 @@ function initiateGitHubLogin() {
     return
   }
 
-  const redirectUri = window.location.origin
+  const redirectUri = window.location.origin + '/victory-tracker'
   const scope = 'user:email'
   const authUrl = `https://github.com/login/oauth/authorize?` +
     `client_id=${GITHUB_CLIENT_ID}&` +
-    `redirect_uri=${redirectUri}/auth/callback&` +
+    `redirect_uri=${encodeURIComponent(redirectUri + '/auth/callback')}&` +
     `scope=${scope}&` +
     `state=random-state-string`
 
