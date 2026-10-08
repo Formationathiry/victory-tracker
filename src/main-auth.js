@@ -2,29 +2,36 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 const GITHUB_CLIENT_ID = import.meta.env.VITE_GITHUB_CLIENT_ID
 
-// ===== DOM Elements - Login =====
-const loginPage = document.getElementById('loginPage')
-const appPage = document.getElementById('appPage')
-const githubLoginBtn = document.getElementById('githubLoginBtn')
-const logoutBtn = document.getElementById('logoutBtn')
-const userAvatar = document.getElementById('userAvatar')
-const userName = document.getElementById('userName')
+// ===== DOM Elements - Login (initialized after DOM is ready) =====
+let loginPage, appPage, githubLoginBtn, logoutBtn, userAvatar, userName
+let joueurNomInput, btnAjouterJoueur, messageAjout, listeJoueurs
+let joueur1Select, joueur2Select, gagnantSelect, btnAjouterVictoire, messageVictoire
+let tableauConfrontations, statistiques, historiqueVictoires
 
-// ===== DOM Elements - App =====
-const joueurNomInput = document.getElementById('joueurNom')
-const btnAjouterJoueur = document.getElementById('btnAjouterJoueur')
-const messageAjout = document.getElementById('messageAjout')
-const listeJoueurs = document.getElementById('listeJoueurs')
+// Function to initialize DOM elements
+function initializeDOMElements() {
+  loginPage = document.getElementById('loginPage')
+  appPage = document.getElementById('appPage')
+  githubLoginBtn = document.getElementById('githubLoginBtn')
+  logoutBtn = document.getElementById('logoutBtn')
+  userAvatar = document.getElementById('userAvatar')
+  userName = document.getElementById('userName')
 
-const joueur1Select = document.getElementById('joueur1')
-const joueur2Select = document.getElementById('joueur2')
-const gagnantSelect = document.getElementById('gagnant')
-const btnAjouterVictoire = document.getElementById('btnAjouterVictoire')
-const messageVictoire = document.getElementById('messageVictoire')
+  joueurNomInput = document.getElementById('joueurNom')
+  btnAjouterJoueur = document.getElementById('btnAjouterJoueur')
+  messageAjout = document.getElementById('messageAjout')
+  listeJoueurs = document.getElementById('listeJoueurs')
 
-const tableauConfrontations = document.getElementById('tableauConfrontations')
-const statistiques = document.getElementById('statistiques')
-const historiqueVictoires = document.getElementById('historiqueVictoires')
+  joueur1Select = document.getElementById('joueur1')
+  joueur2Select = document.getElementById('joueur2')
+  gagnantSelect = document.getElementById('gagnant')
+  btnAjouterVictoire = document.getElementById('btnAjouterVictoire')
+  messageVictoire = document.getElementById('messageVictoire')
+
+  tableauConfrontations = document.getElementById('tableauConfrontations')
+  statistiques = document.getElementById('statistiques')
+  historiqueVictoires = document.getElementById('historiqueVictoires')
+}
 
 // ===== État Global =====
 let joueurs = []
@@ -476,50 +483,6 @@ function afficherErreur(message) {
   messageAjout.className = 'message error'
 }
 
-// ===== Event Listeners =====
-
-githubLoginBtn.addEventListener('click', initiateGitHubLogin)
-logoutBtn.addEventListener('click', logout)
-
-btnAjouterJoueur.addEventListener('click', () => {
-  const nom = joueurNomInput.value.trim()
-  if (!nom) {
-    afficherErreur('Veuillez entrer un nom')
-    return
-  }
-  ajouterJoueur(nom)
-})
-
-joueurNomInput.addEventListener('keypress', (e) => {
-  if (e.key === 'Enter') btnAjouterJoueur.click()
-})
-
-btnAjouterVictoire.addEventListener('click', () => {
-  const j1 = joueur1Select.value
-  const j2 = joueur2Select.value
-  const gagnant = gagnantSelect.value
-
-  if (!j1 || !j2 || !gagnant) {
-    messageVictoire.textContent = 'Veuillez sélectionner les joueurs et le gagnant'
-    messageVictoire.className = 'message error'
-    return
-  }
-
-  if (j1 === j2) {
-    messageVictoire.textContent = 'Sélectionnez deux joueurs différents'
-    messageVictoire.className = 'message error'
-    return
-  }
-
-  if (gagnant !== j1 && gagnant !== j2) {
-    messageVictoire.textContent = 'Le gagnant doit être l\'un des deux joueurs'
-    messageVictoire.className = 'message error'
-    return
-  }
-
-  ajouterVictoire(j1, j2, gagnant)
-})
-
 // ===== Chargement Initial =====
 
 async function chargerDonnees() {
@@ -527,12 +490,73 @@ async function chargerDonnees() {
   await fetchVictoires()
 }
 
-// Vérifier l'authentification au démarrage
-checkAuth()
+// Initialize app when DOM is ready
+function initializeApp() {
+  console.log('🚀 Initializing app...')
 
-// Rafraîchir les données toutes les 5 secondes
-setInterval(() => {
-  if (currentUser) {
-    chargerDonnees()
-  }
-}, 5000)
+  // Initialize DOM elements
+  initializeDOMElements()
+
+  // Attach event listeners
+  githubLoginBtn.addEventListener('click', initiateGitHubLogin)
+  logoutBtn.addEventListener('click', logout)
+
+  btnAjouterJoueur.addEventListener('click', () => {
+    const nom = joueurNomInput.value.trim()
+    if (!nom) {
+      afficherErreur('Veuillez entrer un nom')
+      return
+    }
+    ajouterJoueur(nom)
+  })
+
+  joueurNomInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') btnAjouterJoueur.click()
+  })
+
+  btnAjouterVictoire.addEventListener('click', () => {
+    const j1 = joueur1Select.value
+    const j2 = joueur2Select.value
+    const gagnant = gagnantSelect.value
+
+    if (!j1 || !j2 || !gagnant) {
+      messageVictoire.textContent = 'Veuillez sélectionner les joueurs et le gagnant'
+      messageVictoire.className = 'message error'
+      return
+    }
+
+    if (j1 === j2) {
+      messageVictoire.textContent = 'Sélectionnez deux joueurs différents'
+      messageVictoire.className = 'message error'
+      return
+    }
+
+    if (gagnant !== j1 && gagnant !== j2) {
+      messageVictoire.textContent = 'Le gagnant doit être l\'un des deux joueurs'
+      messageVictoire.className = 'message error'
+      return
+    }
+
+    ajouterVictoire(j1, j2, gagnant)
+  })
+
+  // Check authentication on startup
+  checkAuth()
+
+  // Refresh data every 5 seconds
+  setInterval(() => {
+    if (currentUser) {
+      chargerDonnees()
+    }
+  }, 5000)
+
+  console.log('✅ App initialized successfully')
+}
+
+// Wait for DOM to be ready before initializing
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeApp)
+} else {
+  // DOM is already ready
+  initializeApp()
+}
