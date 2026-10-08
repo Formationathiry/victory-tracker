@@ -1,20 +1,18 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "functions": {
-    "api/neon-auth.js": {
-      "memory": 1024,
-      "maxDuration": 30
-    }
-  },
-  "rewrites": [
+  "routes": [
     {
-      "source": "/auth/:path*",
-      "destination": "/api/neon-auth.js"
+      "src": "/auth/(.*)",
+      "dest": "/api/neon-auth.js"
     },
     {
-      "source": "/api/:path*",
-      "destination": "/api/neon-auth.js"
+      "src": "/api/(.*)",
+      "dest": "/api/neon-auth.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
