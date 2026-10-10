@@ -416,7 +416,7 @@
       }
     }
   </style>
-  <script type="module" crossorigin src="/victory-tracker/assets/index-CtTW0yt5.js"></script>
+  <script type="module" crossorigin src="/victory-tracker/assets/index-DTFva1d7.js"></script>
 </head>
 <body>
   <!-- ===== LOGIN PAGE ===== -->
@@ -483,6 +483,21 @@
           </div>
           <button id="logoutBtn" class="btn-small btn-logout">Déconnexion</button>
         </div>
+      </div>
+
+      <!-- Activity Selector -->
+      <div class="section">
+        <h2>🎯 Sélectionner une activité</h2>
+        <div class="form-row full">
+          <select id="activitySelect" required>
+            <option value="">-- Créer ou sélectionner une activité --</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <input type="text" id="newActivityName" placeholder="Nom de la nouvelle activité (ex: Football, Tennis)" required>
+          <button id="btnCreateActivity" class="btn btn-primary">Créer une activité</button>
+        </div>
+        <div id="messageActivity" class="message"></div>
       </div>
 
       <!-- Admin Panel -->
