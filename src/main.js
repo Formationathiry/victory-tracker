@@ -1,70 +1,157 @@
-// ===== Configuration API =====
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+import { createClient } from '@supabase/supabase-js'
+
+// ===== Supabase Configuration =====
+const SUPABASE_URL = 'https://llehmrjrcnjexzyqmczm.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxsZWhtcmpyY25qZXh6eXFtY3ptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE2MjIxMDMsImV4cCI6MjEwNzE5ODEwM30.AwYA3Sru8o8CToSoJQwp3OyF0D7g24PzcjQ1ZDsd2bM'
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
 // ===== DOM Elements =====
-const joueurNomInput = document.getElementById('joueurNom')
-const btnAjouterJoueur = document.getElementById('btnAjouterJoueur')
-const messageAjout = document.getElementById('messageAjout')
-const listeJoueurs = document.getElementById('listeJoueurs')
+let loginPage, appPage, githubLoginBtn, logoutBtn, userAvatar, userName
+let joueurNomInput, btnAjouterJoueur, messageAjout, listeJoueurs
+let joueur1Select, joueur2Select, gagnantSelect, btnAjouterVictoire, messageVictoire
+let tableauConfrontations, statistiques, historiqueVictoires
 
-const joueur1Select = document.getElementById('joueur1')
-const joueur2Select = document.getElementById('joueur2')
-const gagnantSelect = document.getElementById('gagnant')
-const btnAjouterVictoire = document.getElementById('btnAjouterVictoire')
-const messageVictoire = document.getElementById('messageVictoire')
+function initializeDOMElements() {
+  loginPage = document.getElementById('loginPage')
+  appPage = document.getElementById('appPage')
+  githubLoginBtn = document.getElementById('githubLoginBtn')
+  logoutBtn = document.getElementById('logoutBtn')
+  userAvatar = document.getElementById('userAvatar')
+  userName = document.getElementById('userName')
 
-const tableauConfrontations = document.getElementById('tableauConfrontations')
-const statistiques = document.getElementById('statistiques')
-const historiqueVictoires = document.getElementById('historiqueVictoires')
+  joueurNomInput = document.getElementById('joueurNom')
+  btnAjouterJoueur = document.getElementById('btnAjouterJoueur')
+  messageAjout = document.getElementById('messageAjout')
+  listeJoueurs = document.getElementById('listeJoueurs')
+
+  joueur1Select = document.getElementById('joueur1')
+  joueur2Select = document.getElementById('joueur2')
+  gagnantSelect = document.getElementById('gagnant')
+  btnAjouterVictoire = document.getElementById('btnAjouterVictoire')
+  messageVictoire = document.getElementById('messageVictoire')
+
+  tableauConfrontations = document.getElementById('tableauConfrontations')
+  statistiques = document.getElementById('statistiques')
+  historiqueVictoires = document.getElementById('historiqueVictoires')
+}
 
 // ===== État Global =====
 let joueurs = []
 let victoires = []
+let currentUser = null
 
-// ===== Fonctions API =====
+// ===== AUTH FUNCTIONS =====
+
+async function initializeAuth() {
+  console.log('🚀 Initializing Supabase auth...')
+  
+  const { data: { session } } = await supabase.auth.getSession()
+  
+  if (session) {
+    currentUser = session.user
+    console.log('✅ User logged in:', currentUser.email)
+    showAppPage()
+    chargerDonnees()
+  } else {
+    console.log('📋 No session found, showing login page')
+    showLoginPage()
+  }
+}
+
+function showLoginPage() {
+  loginPage.style.display = 'flex'
+  appPage.style.display = 'none'
+}
+
+function showAppPage() {
+  loginPage.style.display = 'none'
+  appPage.style.display = 'block'
+  if (currentUser) {
+    userName.textContent = `Bienvenue, ${currentUser.user_metadata?.full_name || currentUser.email}!`
+    if (currentUser.user_metadata?.avatar_url) {
+      userAvatar.src = currentUser.user_metadata.avatar_url
+    }
+  }
+}
+
+async function initiateGitHubLogin() {
+  console.log('🔐 Initiating GitHub login...')
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'github',
+    options: {
+      redirectTo: window.location.origin + '/victory-tracker/index.html'
+    }
+  })
+  if (error) {
+    console.error('❌ Auth error:', error)
+    afficherErreur('Erreur: ' + error.message)
+  }
+}
+
+async function logout() {
+  console.log('🔐 Logging out...')
+  const { error } = await supabase.auth.signOut()
+  if (error) {
+    console.error('❌ Logout error:', error)
+  }
+  currentUser = null
+  showLoginPage()
+}
+
+// ===== API FUNCTIONS (SUPABASE) =====
 
 async function fetchJoueurs() {
   try {
-    const response = await fetch(`${API_URL}/api/joueurs`)
-    if (!response.ok) throw new Error('Erreur lors de la récupération des joueurs')
-    joueurs = await response.json()
+    console.log('📡 Fetching joueurs...')
+    const { data, error } = await supabase
+      .from('joueurs')
+      .select('*')
+      .order('nom', { ascending: true })
+    
+    if (error) throw error
+    
+    joueurs = data || []
+    console.log('✅ Joueurs loaded:', joueurs.length)
     mettreAJourSelects()
     afficherJoueurs()
   } catch (error) {
-    console.error('Erreur:', error)
-    afficherErreur('Impossible de charger les joueurs')
+    console.error('❌ Error fetching joueurs:', error)
   }
 }
 
 async function fetchVictoires() {
   try {
-    const response = await fetch(`${API_URL}/api/victoires`)
-    if (!response.ok) throw new Error('Erreur lors de la récupération des victoires')
-    victoires = await response.json()
+    console.log('📡 Fetching victoires...')
+    const { data, error } = await supabase
+      .from('victoires')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    
+    victoires = data || []
+    console.log('✅ Victoires loaded:', victoires.length)
     afficherTableauConfrontations()
     afficherStatistiques()
     afficherHistorique()
   } catch (error) {
-    console.error('Erreur:', error)
-    afficherErreur('Impossible de charger les victoires')
+    console.error('❌ Error fetching victoires:', error)
   }
 }
 
 async function ajouterJoueur(nom) {
   try {
-    const response = await fetch(`${API_URL}/api/joueurs`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nom: nom.trim() })
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.error || 'Erreur serveur')
-    }
-
-    const joueur = await response.json()
-    joueurs.push(joueur)
+    console.log('📡 Adding joueur:', nom)
+    const { data, error } = await supabase
+      .from('joueurs')
+      .insert([{ nom: nom.trim(), user_id: currentUser.id }])
+      .select()
+    
+    if (error) throw error
+    
+    joueurs.push(data[0])
+    console.log('✅ Joueur added')
     mettreAJourSelects()
     afficherJoueurs()
     afficherSucces('Joueur ajouté avec succès!')
@@ -78,14 +165,17 @@ async function supprimerJoueur(id) {
   if (!confirm('Êtes-vous sûr de vouloir supprimer ce joueur ?')) return
 
   try {
-    const response = await fetch(`${API_URL}/api/joueurs/${id}`, {
-      method: 'DELETE'
-    })
-
-    if (!response.ok) throw new Error('Erreur lors de la suppression')
-
+    console.log('📡 Deleting joueur:', id)
+    const { error } = await supabase
+      .from('joueurs')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+    
     joueurs = joueurs.filter(j => j.id !== id)
     victoires = victoires.filter(v => v.joueur1_id !== id && v.joueur2_id !== id)
+    console.log('✅ Joueur deleted')
     mettreAJourSelects()
     afficherJoueurs()
     afficherTableauConfrontations()
@@ -99,23 +189,21 @@ async function supprimerJoueur(id) {
 
 async function ajouterVictoire(joueur1Id, joueur2Id, gagnantId) {
   try {
-    const response = await fetch(`${API_URL}/api/victoires`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    console.log('📡 Adding victoire...')
+    const { data, error } = await supabase
+      .from('victoires')
+      .insert([{
         joueur1_id: joueur1Id,
         joueur2_id: joueur2Id,
-        gagnant_id: gagnantId
-      })
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.error || 'Erreur serveur')
-    }
-
-    const victoire = await response.json()
-    victoires.push(victoire)
+        gagnant_id: gagnantId,
+        user_id: currentUser.id
+      }])
+      .select()
+    
+    if (error) throw error
+    
+    victoires.unshift(data[0])
+    console.log('✅ Victoire added')
     afficherTableauConfrontations()
     afficherStatistiques()
     afficherHistorique()
@@ -128,258 +216,158 @@ async function ajouterVictoire(joueur1Id, joueur2Id, gagnantId) {
   }
 }
 
-// ===== Affichage =====
+// ===== UI FUNCTIONS =====
+
+function chargerDonnees() {
+  fetchJoueurs()
+  fetchVictoires()
+}
 
 function mettreAJourSelects() {
-  const selects = [joueur1Select, joueur2Select, gagnantSelect]
-  const optionsHtml = joueurs
-    .map(j => `<option value="${j.id}">${j.nom}</option>`)
-    .join('')
+  joueur1Select.innerHTML = '<option value="">-- Sélectionner --</option>'
+  joueur2Select.innerHTML = '<option value="">-- Sélectionner --</option>'
+  gagnantSelect.innerHTML = '<option value="">-- Sélectionner --</option>'
 
-  selects.forEach(select => {
-    const currentValue = select.value
-    select.innerHTML = `<option value="">Sélectionner...</option>${optionsHtml}`
-    select.value = currentValue
+  joueurs.forEach(j => {
+    joueur1Select.innerHTML += `<option value="${j.id}">${j.nom}</option>`
+    joueur2Select.innerHTML += `<option value="${j.id}">${j.nom}</option>`
+    gagnantSelect.innerHTML += `<option value="${j.id}">${j.nom}</option>`
   })
 }
 
 function afficherJoueurs() {
-  if (joueurs.length === 0) {
-    listeJoueurs.innerHTML = '<p class="loading">Aucun joueur</p>'
-    return
-  }
-
-  const stats = calculerStatsJoueurs()
-  const html = joueurs
-    .map(joueur => {
-      const stat = stats[joueur.id] || { victoires: 0, total: 0, ratio: '0%' }
-      return `
-        <div class="joueur-item">
-          <div>
-            <div class="joueur-nom">${joueur.nom}</div>
-            <div class="joueur-stats">
-              ${stat.victoires}/${stat.total} matchs • ${stat.ratio}
-            </div>
-          </div>
-          <button class="btn btn-small" onclick="supprimerJoueur('${joueur.id}')">
-            Supprimer
-          </button>
-        </div>
-      `
-    })
-    .join('')
-
-  listeJoueurs.innerHTML = html
+  listeJoueurs.innerHTML = ''
+  joueurs.forEach(joueur => {
+    const div = document.createElement('div')
+    div.className = 'joueur-item'
+    div.innerHTML = `
+      <span>${joueur.nom}</span>
+      <button onclick="supprimerJoueur('${joueur.id}')" class="btn-small">Supprimer</button>
+    `
+    listeJoueurs.appendChild(div)
+  })
 }
 
 function afficherTableauConfrontations() {
-  if (joueurs.length < 2) {
-    tableauConfrontations.innerHTML = '<p class="loading">Ajoutez au moins 2 joueurs</p>'
-    return
-  }
-
-  // Créer une matrice de confrontations
-  const matrice = {}
-  joueurs.forEach(j1 => {
-    matrice[j1.id] = {}
+  const confrontations = {}
+  
+  joueurs.forEach(j => {
+    confrontations[j.id] = {}
     joueurs.forEach(j2 => {
-      if (j1.id !== j2.id) {
-        const victJ1 = victoires.filter(
-          v => (v.joueur1_id === j1.id && v.joueur2_id === j2.id && v.gagnant_id === j1.id) ||
-               (v.joueur2_id === j1.id && v.joueur1_id === j2.id && v.gagnant_id === j1.id)
-        ).length
-        const victJ2 = victoires.filter(
-          v => (v.joueur1_id === j1.id && v.joueur2_id === j2.id && v.gagnant_id === j2.id) ||
-               (v.joueur2_id === j1.id && v.joueur1_id === j2.id && v.gagnant_id === j2.id)
-        ).length
-        matrice[j1.id][j2.id] = `${victJ1}-${victJ2}`
+      if (j.id !== j2.id) {
+        const wins = victoires.filter(v => v.gagnant_id === j.id && 
+          ((v.joueur1_id === j.id && v.joueur2_id === j2.id) || 
+           (v.joueur2_id === j.id && v.joueur1_id === j2.id))).length
+        confrontations[j.id][j2.id] = wins
       }
     })
   })
 
-  // Construire le tableau
-  const headerHtml = `
-    <tr>
-      <th>Joueur</th>
-      ${joueurs.map(j => `<th>${j.nom}</th>`).join('')}
-    </tr>
-  `
+  let html = '<table><tr><th>Joueur</th>'
+  joueurs.forEach(j => html += `<th>${j.nom}</th>`)
+  html += '</tr>'
 
-  const rowsHtml = joueurs
-    .map(j1 => `
-      <tr>
-        <td><strong>${j1.nom}</strong></td>
-        ${joueurs
-          .map(j2 => {
-            if (j1.id === j2.id) return '<td>-</td>'
-            return `<td class="score-cell">${matrice[j1.id][j2.id]}</td>`
-          })
-          .join('')}
-      </tr>
-    `)
-    .join('')
+  joueurs.forEach(j => {
+    html += `<tr><td><strong>${j.nom}</strong></td>`
+    joueurs.forEach(j2 => {
+      if (j.id === j2.id) {
+        html += '<td>-</td>'
+      } else {
+        html += `<td>${confrontations[j.id][j2.id] || 0}</td>`
+      }
+    })
+    html += '</tr>'
+  })
+  html += '</table>'
 
-  tableauConfrontations.innerHTML = `
-    <table>
-      <thead>${headerHtml}</thead>
-      <tbody>${rowsHtml}</tbody>
-    </table>
-  `
+  tableauConfrontations.innerHTML = html
 }
 
 function afficherStatistiques() {
-  const stats = calculerStatsJoueurs()
-  const joueursTries = joueurs.sort((a, b) => {
-    const statsA = stats[a.id] || { victoires: 0 }
-    const statsB = stats[b.id] || { victoires: 0 }
-    return statsB.victoires - statsA.victoires
+  let html = '<div class="stats-container">'
+  
+  joueurs.forEach(j => {
+    const wins = victoires.filter(v => v.gagnant_id === j.id).length
+    const total = victoires.filter(v => v.joueur1_id === j.id || v.joueur2_id === j.id).length
+    html += `
+      <div class="stat-card">
+        <strong>${j.nom}</strong><br>
+        Victoires: ${wins}<br>
+        Total matchs: ${total}
+      </div>
+    `
   })
-
-  const html = joueursTries
-    .map((joueur, index) => {
-      const stat = stats[joueur.id] || { victoires: 0, total: 0, ratio: '0%' }
-      const couleurs = [
-        'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
-        'linear-gradient(135deg, #c0cfd9 0%, #999999 100%)',
-        'linear-gradient(135deg, #f97316 0%, #dc2626 100%)'
-      ]
-      const couleur = couleurs[index] || 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)'
-
-      return `
-        <div class="stat-card" style="background: ${couleur}">
-          <div class="stat-label">#${index + 1} - ${joueur.nom}</div>
-          <div class="stat-value">${stat.victoires}</div>
-          <div class="stat-label">${stat.total} matchs • ${stat.ratio}</div>
-        </div>
-      `
-    })
-    .join('')
-
+  
+  html += '</div>'
   statistiques.innerHTML = html
 }
 
 function afficherHistorique() {
-  if (victoires.length === 0) {
-    historiqueVictoires.innerHTML = '<p class="loading">Aucune victoire enregistrée</p>'
-    return
-  }
-
-  const html = victoires
-    .slice()
-    .reverse()
-    .map(victoire => {
-      const j1 = joueurs.find(j => j.id === victoire.joueur1_id)
-      const j2 = joueurs.find(j => j.id === victoire.joueur2_id)
-      const gagnant = joueurs.find(j => j.id === victoire.gagnant_id)
-      const perdant = victoire.gagnant_id === victoire.joueur1_id ? j2 : j1
-
-      const date = new Date(victoire.date)
-      const dateStr = date.toLocaleDateString('fr-FR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-
-      return `
-        <div class="historique-item">
-          <div class="historique-titre">
-            🏆 ${gagnant?.nom || 'Inconnu'} a battu ${perdant?.nom || 'Inconnu'}
-          </div>
-          <div class="historique-date">${dateStr}</div>
-        </div>
-      `
-    })
-    .join('')
-
-  historiqueVictoires.innerHTML = html
+  historiqueVictoires.innerHTML = ''
+  
+  victoires.forEach(v => {
+    const j1 = joueurs.find(j => j.id === v.joueur1_id)
+    const j2 = joueurs.find(j => j.id === v.joueur2_id)
+    const gagnant = joueurs.find(j => j.id === v.gagnant_id)
+    
+    if (j1 && j2 && gagnant) {
+      const div = document.createElement('div')
+      div.className = 'historique-item'
+      const date = new Date(v.created_at).toLocaleDateString('fr-FR')
+      div.innerHTML = `<strong>${gagnant.nom}</strong> a battu ${j1.nom === gagnant.nom ? j2.nom : j1.nom} (${date})`
+      historiqueVictoires.appendChild(div)
+    }
+  })
 }
 
-function calculerStatsJoueurs() {
-  const stats = {}
+function afficherSucces(msg) {
+  messageAjout.style.color = 'green'
+  messageAjout.textContent = msg
+  setTimeout(() => messageAjout.textContent = '', 3000)
+}
 
-  joueurs.forEach(joueur => {
-    const victoires_count = victoires.filter(v => v.gagnant_id === joueur.id).length
-    const total = victoires.filter(
-      v => v.joueur1_id === joueur.id || v.joueur2_id === joueur.id
-    ).length
-    const ratio = total > 0 ? Math.round((victoires_count / total) * 100) : 0
+function afficherErreur(msg) {
+  messageAjout.style.color = 'red'
+  messageAjout.textContent = msg
+}
 
-    stats[joueur.id] = {
-      victoires: victoires_count,
-      total: total,
-      ratio: `${ratio}%`
+// ===== EVENT LISTENERS =====
+
+function initializeApp() {
+  initializeDOMElements()
+  initializeAuth()
+
+  githubLoginBtn.addEventListener('click', initiateGitHubLogin)
+  logoutBtn.addEventListener('click', logout)
+  btnAjouterJoueur.addEventListener('click', () => {
+    if (joueurNomInput.value.trim()) {
+      ajouterJoueur(joueurNomInput.value)
+    }
+  })
+  btnAjouterVictoire.addEventListener('click', () => {
+    const j1 = joueur1Select.value
+    const j2 = joueur2Select.value
+    const g = gagnantSelect.value
+    if (j1 && j2 && g && j1 !== j2) {
+      ajouterVictoire(j1, j2, g)
     }
   })
 
-  return stats
+  // Auto-refresh when data changes
+  supabase
+    .channel('joueurs')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'joueurs' }, () => fetchJoueurs())
+    .subscribe()
+
+  supabase
+    .channel('victoires')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'victoires' }, () => fetchVictoires())
+    .subscribe()
 }
 
-// ===== Messages =====
-
-function afficherSucces(message) {
-  messageAjout.textContent = message
-  messageAjout.className = 'message success'
-  setTimeout(() => {
-    messageAjout.className = 'message'
-  }, 3000)
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeApp)
+} else {
+  initializeApp()
 }
-
-function afficherErreur(message) {
-  messageAjout.textContent = message
-  messageAjout.className = 'message error'
-}
-
-// ===== Event Listeners =====
-
-btnAjouterJoueur.addEventListener('click', () => {
-  const nom = joueurNomInput.value.trim()
-  if (!nom) {
-    afficherErreur('Veuillez entrer un nom')
-    return
-  }
-  ajouterJoueur(nom)
-})
-
-joueurNomInput.addEventListener('keypress', (e) => {
-  if (e.key === 'Enter') btnAjouterJoueur.click()
-})
-
-btnAjouterVictoire.addEventListener('click', () => {
-  const j1 = joueur1Select.value
-  const j2 = joueur2Select.value
-  const gagnant = gagnantSelect.value
-
-  if (!j1 || !j2 || !gagnant) {
-    messageVictoire.textContent = 'Veuillez sélectionner les joueurs et le gagnant'
-    messageVictoire.className = 'message error'
-    return
-  }
-
-  if (j1 === j2) {
-    messageVictoire.textContent = 'Sélectionnez deux joueurs différents'
-    messageVictoire.className = 'message error'
-    return
-  }
-
-  if (gagnant !== j1 && gagnant !== j2) {
-    messageVictoire.textContent = 'Le gagnant doit être l\'un des deux joueurs'
-    messageVictoire.className = 'message error'
-    return
-  }
-
-  ajouterVictoire(j1, j2, gagnant)
-})
-
-// ===== Chargement Initial =====
-
-async function chargerDonnees() {
-  await fetchJoueurs()
-  await fetchVictoires()
-}
-
-chargerDonnees()
-
-// Rafraîchir les données toutes les 5 secondes
-setInterval(chargerDonnees, 5000)

@@ -3,14 +3,6 @@
   "outputDirectory": "dist",
   "routes": [
     {
-      "src": "/auth/(.*)",
-      "dest": "/api/neon-auth.js"
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/neon-auth.js"
-    },
-    {
       "src": "/(.*)",
       "dest": "/index.html"
     }
