@@ -1012,15 +1012,30 @@
           return
         }
 
-        const { data, error } = await supabase
+        // Fetch joueurs for current activity
+        const { data: activityJoueurs, error: error1 } = await supabase
           .from('joueurs')
           .select('*')
           .eq('user_id', currentUser.id)
           .eq('activity_id', currentActivity.id)
           .order('nom', { ascending: true })
 
-        if (error) throw error
-        joueurs = data || []
+        // Fetch global joueurs (without activity)
+        const { data: globalJoueurs, error: error2 } = await supabase
+          .from('joueurs')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .is('activity_id', null)
+          .order('nom', { ascending: true })
+
+        if (error1 || error2) throw error1 || error2
+
+        // Combine both lists - add a flag to distinguish them
+        joueurs = [
+          ...(activityJoueurs || []),
+          ...(globalJoueurs || []).map(j => ({ ...j, isGlobal: true }))
+        ]
+
         mettreAJourSelects()
         afficherJoueurs()
       } catch (error) {
@@ -1150,9 +1165,10 @@
       gagnantSelect.innerHTML = '<option value="">-- Sélectionner --</option>'
 
       joueurs.forEach(j => {
-        joueur1Select.innerHTML += `<option value="${j.id}">${j.nom}</option>`
-        joueur2Select.innerHTML += `<option value="${j.id}">${j.nom}</option>`
-        gagnantSelect.innerHTML += `<option value="${j.id}">${j.nom}</option>`
+        const label = j.isGlobal ? `${j.nom} (global)` : j.nom
+        joueur1Select.innerHTML += `<option value="${j.id}">${label}</option>`
+        joueur2Select.innerHTML += `<option value="${j.id}">${label}</option>`
+        gagnantSelect.innerHTML += `<option value="${j.id}">${label}</option>`
       })
     }
 
@@ -1162,15 +1178,48 @@
         listeJoueurs.innerHTML = '<p>Aucun joueur encore</p>'
         return
       }
-      joueurs.forEach(joueur => {
-        const div = document.createElement('div')
-        div.className = 'joueur-item'
-        div.innerHTML = `
-          <span>${joueur.nom}</span>
-          <button onclick="supprimerJoueur('${joueur.id}')" class="btn-small">Supprimer</button>
-        `
-        listeJoueurs.appendChild(div)
-      })
+
+      // Separate activity joueurs and global joueurs
+      const activityJoueurs = joueurs.filter(j => !j.isGlobal)
+      const globalJoueurs = joueurs.filter(j => j.isGlobal)
+
+      // Display activity joueurs
+      if (activityJoueurs.length > 0) {
+        const sectionTitle = document.createElement('h4')
+        sectionTitle.textContent = 'Joueurs de cette activité'
+        sectionTitle.style.marginTop = '0'
+        listeJoueurs.appendChild(sectionTitle)
+
+        activityJoueurs.forEach(joueur => {
+          const div = document.createElement('div')
+          div.className = 'joueur-item'
+          div.innerHTML = `
+            <span>${joueur.nom}</span>
+            <button onclick="supprimerJoueur('${joueur.id}')" class="btn-small">Supprimer</button>
+          `
+          listeJoueurs.appendChild(div)
+        })
+      }
+
+      // Display global joueurs
+      if (globalJoueurs.length > 0) {
+        const sectionTitle = document.createElement('h4')
+        sectionTitle.textContent = 'Joueurs globaux'
+        sectionTitle.style.marginTop = '20px'
+        sectionTitle.style.color = '#999'
+        listeJoueurs.appendChild(sectionTitle)
+
+        globalJoueurs.forEach(joueur => {
+          const div = document.createElement('div')
+          div.className = 'joueur-item'
+          div.style.opacity = '0.7'
+          div.innerHTML = `
+            <span>${joueur.nom} <small style="color: #999;">(global)</small></span>
+            <button onclick="supprimerJoueur('${joueur.id}')" class="btn-small">Supprimer</button>
+          `
+          listeJoueurs.appendChild(div)
+        })
+      }
     }
 
     function afficherTableauConfrontations() {
