@@ -484,6 +484,21 @@
         </div>
       </div>
 
+      <!-- Activity Selector -->
+      <div class="section">
+        <h2>🎯 Sélectionner une activité</h2>
+        <div class="form-row full">
+          <select id="activitySelect" required>
+            <option value="">-- Créer ou sélectionner une activité --</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <input type="text" id="newActivityName" placeholder="Nom de la nouvelle activité (ex: Football, Tennis)" required>
+          <button id="btnCreateActivity" class="btn btn-primary">Créer une activité</button>
+        </div>
+        <div id="messageActivity" class="message"></div>
+      </div>
+
       <!-- Admin Panel -->
       <div id="adminPanel" class="section">
         <div class="admin-panel-content">
@@ -573,6 +588,8 @@
     let joueur1Select, joueur2Select, gagnantSelect, btnAjouterVictoire, messageVictoire
     let tableauConfrontations, statistiques, historiqueVictoires, pendingSignups
 
+    let activitySelect, newActivityName, btnCreateActivity, messageActivity
+
     function initializeDOMElements() {
       loginPage = document.getElementById('loginPage')
       appPage = document.getElementById('appPage')
@@ -581,6 +598,11 @@
       userAvatar = document.getElementById('userAvatar')
       adminPanelBtn = document.getElementById('adminPanelBtn')
       adminPanel = document.getElementById('adminPanel')
+
+      activitySelect = document.getElementById('activitySelect')
+      newActivityName = document.getElementById('newActivityName')
+      btnCreateActivity = document.getElementById('btnCreateActivity')
+      messageActivity = document.getElementById('messageActivity')
 
       joueurNomInput = document.getElementById('joueurNom')
       btnAjouterJoueur = document.getElementById('btnAjouterJoueur')
@@ -604,6 +626,8 @@
     let victoires = []
     let currentUser = null
     let userProfile = null
+    let activities = []
+    let currentActivity = null
 
     // ===== AUTH FUNCTIONS =====
 
@@ -768,6 +792,9 @@
       appPage.style.display = 'block'
       userName.textContent = `Bienvenue, ${userProfile?.username || 'Joueur'}!`
 
+      // Load activities
+      loadActivities()
+
       // Show admin button if user is admin
       if (userProfile?.is_admin) {
         adminPanelBtn.style.display = 'inline-block'
@@ -826,40 +853,23 @@
 
     window.approveSignup = async function(signupId) {
       try {
-        // Get signup data
-        const { data: signupData, error: getError } = await supabase
+        console.log('Approving signup:', signupId)
+
+        // Update pending_signups - the trigger will automatically update the profile
+        const { error } = await supabase
           .from('pending_signups')
-          .select('username, email')
-          .eq('id', signupId)
-          .single()
-
-        if (getError) throw getError
-
-        // Find user profile by username
-        const { data: profiles, error: profileError } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('username', signupData.username)
-          .single()
-
-        if (profileError) throw profileError
-
-        // Update profile to approved
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ approved: true })
-          .eq('id', profiles.id)
-
-        if (updateError) throw updateError
-
-        // Update pending_signups
-        const { error: signupUpdateError } = await supabase
-          .from('pending_signups')
-          .update({ approved: true, reviewed_at: new Date() })
+          .update({
+            approved: true,
+            reviewed_at: new Date().toISOString()
+          })
           .eq('id', signupId)
 
-        if (signupUpdateError) throw signupUpdateError
+        if (error) {
+          console.error('Update error:', error)
+          throw error
+        }
 
+        console.log('✅ Signup approved - trigger will update profile')
         showMessage('pendingSignups', '✅ Utilisateur approuvé', 'success')
         setTimeout(() => loadPendingSignups(), 500)
       } catch (error) {
@@ -873,12 +883,24 @@
       if (reason === null) return
 
       try {
+        console.log('Rejecting signup:', signupId)
+
+        // Update pending_signups - the trigger will automatically update the profile
         const { error } = await supabase
           .from('pending_signups')
-          .update({ approved: false, reviewed_at: new Date(), rejection_reason: reason })
+          .update({
+            approved: false,
+            reviewed_at: new Date().toISOString(),
+            rejection_reason: reason
+          })
           .eq('id', signupId)
 
-        if (error) throw error
+        if (error) {
+          console.error('Update error:', error)
+          throw error
+        }
+
+        console.log('✅ Signup rejected - trigger will update profile')
         showMessage('pendingSignups', '❌ Demande rejetée', 'error')
         setTimeout(() => loadPendingSignups(), 500)
       } catch (error) {
@@ -887,14 +909,105 @@
       }
     }
 
+    // ===== ACTIVITY FUNCTIONS =====
+
+    async function loadActivities() {
+      try {
+        const { data, error } = await supabase
+          .from('activities')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .order('created_at', { ascending: false })
+
+        if (error) throw error
+        activities = data || []
+
+        // Update select dropdown
+        activitySelect.innerHTML = '<option value="">-- Créer ou sélectionner une activité --</option>'
+        activities.forEach(activity => {
+          const option = document.createElement('option')
+          option.value = activity.id
+          option.textContent = activity.name
+          activitySelect.appendChild(option)
+        })
+      } catch (error) {
+        console.error('Error loading activities:', error)
+      }
+    }
+
+    async function createActivity(name) {
+      try {
+        if (!name.trim()) {
+          showMessage('messageActivity', 'Le nom de l\'activité ne peut pas être vide', 'error')
+          return
+        }
+
+        const { data, error } = await supabase
+          .from('activities')
+          .insert([{
+            name: name.trim(),
+            user_id: currentUser.id
+          }])
+          .select()
+
+        if (error) throw error
+
+        activities.push(data[0])
+        newActivityName.value = ''
+
+        // Update select and auto-select the new activity
+        loadActivities()
+        setTimeout(() => {
+          activitySelect.value = data[0].id
+          selectActivity(data[0].id)
+        }, 100)
+
+        showMessage('messageActivity', `✅ Activité "${name}" créée!`, 'success')
+      } catch (error) {
+        console.error('Error creating activity:', error)
+        showMessage('messageActivity', 'Erreur: ' + error.message, 'error')
+      }
+    }
+
+    async function selectActivity(activityId) {
+      try {
+        if (!activityId) {
+          currentActivity = null
+          joueurs = []
+          victoires = []
+          afficherJoueurs()
+          afficherTableauConfrontations()
+          afficherStatistiques()
+          afficherHistorique()
+          return
+        }
+
+        currentActivity = activities.find(a => a.id === activityId)
+        console.log('Selected activity:', currentActivity)
+
+        // Load data for this activity
+        chargerDonnees()
+      } catch (error) {
+        console.error('Error selecting activity:', error)
+      }
+    }
+
     // ===== API FUNCTIONS =====
 
     async function fetchJoueurs() {
       try {
+        if (!currentActivity) {
+          joueurs = []
+          mettreAJourSelects()
+          afficherJoueurs()
+          return
+        }
+
         const { data, error } = await supabase
           .from('joueurs')
           .select('*')
           .eq('user_id', currentUser.id)
+          .eq('activity_id', currentActivity.id)
           .order('nom', { ascending: true })
 
         if (error) throw error
@@ -908,10 +1021,19 @@
 
     async function fetchVictoires() {
       try {
+        if (!currentActivity) {
+          victoires = []
+          afficherTableauConfrontations()
+          afficherStatistiques()
+          afficherHistorique()
+          return
+        }
+
         const { data, error } = await supabase
           .from('victoires')
           .select('*')
           .eq('user_id', currentUser.id)
+          .eq('activity_id', currentActivity.id)
           .order('created_at', { ascending: false })
 
         if (error) throw error
@@ -926,9 +1048,18 @@
 
     async function ajouterJoueur(nom) {
       try {
+        if (!currentActivity) {
+          showMessage('messageAjout', 'Veuillez d\'abord sélectionner une activité', 'error')
+          return
+        }
+
         const { data, error } = await supabase
           .from('joueurs')
-          .insert([{ nom: nom.trim(), user_id: currentUser.id }])
+          .insert([{
+            nom: nom.trim(),
+            user_id: currentUser.id,
+            activity_id: currentActivity.id
+          }])
           .select()
 
         if (error) throw error
@@ -967,13 +1098,19 @@
 
     async function ajouterVictoire(joueur1Id, joueur2Id, gagnantId) {
       try {
+        if (!currentActivity) {
+          showMessage('messageVictoire', 'Veuillez d\'abord sélectionner une activité', 'error')
+          return
+        }
+
         const { data, error } = await supabase
           .from('victoires')
           .insert([{
             joueur1_id: joueur1Id,
             joueur2_id: joueur2Id,
             gagnant_id: gagnantId,
-            user_id: currentUser.id
+            user_id: currentUser.id,
+            activity_id: currentActivity.id
           }])
           .select()
 
@@ -1128,6 +1265,15 @@
       initializeAuth()
 
       logoutBtn.addEventListener('click', logout)
+
+      // Activity events
+      activitySelect.addEventListener('change', (e) => selectActivity(e.target.value))
+      btnCreateActivity.addEventListener('click', () => {
+        if (newActivityName.value.trim()) {
+          createActivity(newActivityName.value)
+        }
+      })
+
       btnAjouterJoueur.addEventListener('click', () => {
         if (joueurNomInput.value.trim()) {
           ajouterJoueur(joueurNomInput.value)
