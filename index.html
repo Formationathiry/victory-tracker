@@ -460,6 +460,12 @@
           <label for="signupPasswordConfirm">Confirmer le mot de passe</label>
           <input type="password" id="signupPasswordConfirm" required>
         </div>
+        <div class="form-group">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+            <input type="checkbox" id="signupCreatePlayer" style="cursor: pointer;">
+            <span>Créer automatiquement un joueur avec mon nom d'utilisateur</span>
+          </label>
+        </div>
         <button type="submit" class="btn btn-primary">S'inscrire</button>
         <div id="signupMessage" class="message"></div>
       </form>
@@ -650,6 +656,7 @@
       const email = document.getElementById('signupEmail').value.trim()
       const password = document.getElementById('signupPassword').value
       const passwordConfirm = document.getElementById('signupPasswordConfirm').value
+      const createPlayer = document.getElementById('signupCreatePlayer').checked
 
       if (password !== passwordConfirm) {
         showMessage('signupMessage', 'Les mots de passe ne correspondent pas', 'error')
@@ -660,7 +667,7 @@
         // 1. Create pending signup request
         const { error: signupError } = await supabase
           .from('pending_signups')
-          .insert([{ username, email }])
+          .insert([{ username, email, create_player: createPlayer }])
 
         if (signupError) throw signupError
 
@@ -831,11 +838,13 @@
 
         let html = ''
         data.forEach(signup => {
+          const createPlayerIndicator = signup.create_player ? '🎮 Créer joueur' : ''
           html += `
             <div class="signup-request">
               <div class="signup-request-info">
                 <div class="signup-request-username">${signup.username}</div>
                 <div class="signup-request-email">${signup.email}</div>
+                ${createPlayerIndicator ? `<div style="font-size: 12px; color: #667eea; margin-top: 5px;">${createPlayerIndicator}</div>` : ''}
               </div>
               <div class="signup-request-actions">
                 <button class="btn-approve" onclick="approveSignup('${signup.id}')">Approuver</button>
