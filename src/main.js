@@ -45,9 +45,9 @@ let currentUser = null
 
 async function initializeAuth() {
   console.log('🚀 Initializing Supabase auth...')
-  
+
   const { data: { session } } = await supabase.auth.getSession()
-  
+
   if (session) {
     currentUser = session.user
     console.log('✅ User logged in:', currentUser.email)
@@ -57,6 +57,17 @@ async function initializeAuth() {
     console.log('📋 No session found, showing login page')
     showLoginPage()
   }
+
+  // Listen for auth changes (e.g., after OAuth callback)
+  supabase.auth.onAuthStateChange((event, session) => {
+    console.log('🔐 Auth state changed:', event)
+    if (session) {
+      currentUser = session.user
+      console.log('✅ User logged in via callback:', currentUser.email)
+      showAppPage()
+      chargerDonnees()
+    }
+  })
 }
 
 function showLoginPage() {
@@ -80,7 +91,7 @@ async function initiateGitHubLogin() {
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'github',
     options: {
-      redirectTo: window.location.origin + '/victory-tracker/index.html'
+      redirectTo: window.location.origin + '/victory-tracker/'
     }
   })
   if (error) {
