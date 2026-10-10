@@ -46,11 +46,26 @@ let currentUser = null
 async function initializeAuth() {
   console.log('🚀 Initializing Supabase auth...')
 
-  const { data: { session } } = await supabase.auth.getSession()
+  // Check for OAuth callback parameters in URL
+  const params = new URLSearchParams(window.location.search)
+  if (params.has('code')) {
+    console.log('🔐 OAuth callback detected, waiting for Supabase to process...')
+    // Give Supabase time to process the callback
+    await new Promise(resolve => setTimeout(resolve, 1000))
+  }
+
+  // Get current session
+  const { data: { session }, error } = await supabase.auth.getSession()
+
+  if (error) {
+    console.error('❌ Session error:', error)
+  }
 
   if (session) {
     currentUser = session.user
     console.log('✅ User logged in:', currentUser.email)
+    // Clean up URL
+    window.history.replaceState({}, document.title, window.location.pathname)
     showAppPage()
     chargerDonnees()
   } else {
@@ -58,14 +73,18 @@ async function initializeAuth() {
     showLoginPage()
   }
 
-  // Listen for auth changes (e.g., after OAuth callback)
+  // Listen for auth changes
   supabase.auth.onAuthStateChange((event, session) => {
     console.log('🔐 Auth state changed:', event)
     if (session) {
       currentUser = session.user
-      console.log('✅ User logged in via callback:', currentUser.email)
+      console.log('✅ User logged in:', currentUser.email)
+      window.history.replaceState({}, document.title, window.location.pathname)
       showAppPage()
       chargerDonnees()
+    } else if (event === 'SIGNED_OUT') {
+      currentUser = null
+      showLoginPage()
     }
   })
 }
