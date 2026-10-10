@@ -3,116 +3,560 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Victory Tracker - Suivi des Victoires</title>
-  <script type="module" crossorigin src="/victory-tracker/assets/index-DOcTU4Ys.js"></script>
-  <link rel="stylesheet" crossorigin href="/victory-tracker/assets/index-CNtwy9-5.css">
+  <title>Victory Tracker</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .container {
+      max-width: 1200px;
+      width: 90%;
+      margin: 0 auto;
+    }
+
+    /* ===== LOGIN PAGE ===== */
+    #loginPage {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .auth-container {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      width: 100%;
+      max-width: 400px;
+      padding: 40px;
+    }
+
+    .auth-container h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 30px;
+      font-size: 28px;
+    }
+
+    .auth-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 30px;
+      border-bottom: 2px solid #eee;
+    }
+
+    .auth-tab {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-size: 16px;
+      color: #999;
+      border-bottom: 3px solid transparent;
+      transition: all 0.3s;
+    }
+
+    .auth-tab.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+
+    .auth-form {
+      display: none;
+    }
+
+    .auth-form.active {
+      display: block;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      color: #333;
+      font-weight: 500;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .message {
+      padding: 12px;
+      margin-top: 15px;
+      border-radius: 5px;
+      text-align: center;
+      display: none;
+    }
+
+    .message.show {
+      display: block;
+    }
+
+    .message.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .message.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .message.info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+
+    /* ===== APP PAGE ===== */
+    #appPage {
+      display: none;
+      padding: 20px 0;
+    }
+
+    .header {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .header h1 {
+      color: #333;
+      margin: 0;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .user-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 20px;
+    }
+
+    .user-name {
+      color: #333;
+      font-weight: 600;
+    }
+
+    .btn-small {
+      padding: 6px 12px;
+      font-size: 12px;
+      border: none;
+      border-radius: 4px;
+      background: #667eea;
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .btn-small:hover {
+      background: #764ba2;
+    }
+
+    .btn-logout {
+      background: #dc3545;
+    }
+
+    .btn-logout:hover {
+      background: #c82333;
+    }
+
+    .btn-admin {
+      background: #ffc107;
+      color: #333;
+    }
+
+    .btn-admin:hover {
+      background: #e0a800;
+    }
+
+    .section {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .section h2 {
+      color: #333;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #667eea;
+      padding-bottom: 10px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    .form-row.full {
+      grid-template-columns: 1fr;
+    }
+
+    .joueur-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 5px;
+      margin-bottom: 10px;
+    }
+
+    .stats-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .stat-card strong {
+      font-size: 24px;
+      display: block;
+      margin-bottom: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    table th, table td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+    }
+
+    table th {
+      background: #667eea;
+      color: white;
+      font-weight: 600;
+    }
+
+    table tr:hover {
+      background: #f8f9fa;
+    }
+
+    .historique-item {
+      padding: 12px;
+      background: #f8f9fa;
+      border-left: 4px solid #667eea;
+      margin-bottom: 10px;
+      border-radius: 4px;
+    }
+
+    /* Admin Panel */
+    #adminPanel {
+      display: none;
+    }
+
+    .admin-panel-content {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 5px;
+    }
+
+    .admin-panel-content h3 {
+      color: #856404;
+      margin-bottom: 15px;
+    }
+
+    .signup-request {
+      background: white;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid #ddd;
+    }
+
+    .signup-request-info {
+      flex: 1;
+    }
+
+    .signup-request-username {
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 5px;
+    }
+
+    .signup-request-email {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .signup-request-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-approve {
+      background: #28a745;
+      color: white;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .btn-approve:hover {
+      background: #218838;
+    }
+
+    .btn-reject {
+      background: #dc3545;
+      color: white;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .btn-reject:hover {
+      background: #c82333;
+    }
+
+    @media (max-width: 768px) {
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+
+      .header {
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .stats-container {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+  <script type="module" crossorigin src="/victory-tracker/assets/index-CQx-AUzc.js"></script>
 </head>
 <body>
-  <!-- Login Page -->
-  <div id="loginPage" class="login-page">
-    <div class="login-container">
-      <div class="login-card">
-        <h1>🏆 Victory Tracker</h1>
-        <p>Suivi des victoires et confrontations entre joueurs</p>
+  <!-- ===== LOGIN PAGE ===== -->
+  <div id="loginPage" class="container">
+    <div class="auth-container">
+      <h1>🏆 Victory Tracker</h1>
 
-        <div class="login-form">
-          <button id="githubLoginBtn" class="btn btn-github">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v 3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-            </svg>
-            Se connecter avec GitHub
-          </button>
-          <p class="login-info">Connexion sécurisée via GitHub OAuth</p>
-        </div>
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="switchAuthTab('login')">Se connecter</button>
+        <button class="auth-tab" onclick="switchAuthTab('signup')">S'inscrire</button>
       </div>
+
+      <!-- Login Form -->
+      <form class="auth-form active" id="loginForm" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label for="loginEmail">Email</label>
+          <input type="email" id="loginEmail" required>
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">Mot de passe</label>
+          <input type="password" id="loginPassword" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Se connecter</button>
+        <div id="loginMessage" class="message"></div>
+      </form>
+
+      <!-- Signup Form -->
+      <form class="auth-form" id="signupForm" onsubmit="handleSignup(event)">
+        <div class="form-group">
+          <label for="signupUsername">Nom d'utilisateur</label>
+          <input type="text" id="signupUsername" required>
+        </div>
+        <div class="form-group">
+          <label for="signupEmail">Email</label>
+          <input type="email" id="signupEmail" required>
+        </div>
+        <div class="form-group">
+          <label for="signupPassword">Mot de passe</label>
+          <input type="password" id="signupPassword" required>
+        </div>
+        <div class="form-group">
+          <label for="signupPasswordConfirm">Confirmer le mot de passe</label>
+          <input type="password" id="signupPasswordConfirm" required>
+        </div>
+        <button type="submit" class="btn btn-primary">S'inscrire</button>
+        <div id="signupMessage" class="message"></div>
+      </form>
     </div>
   </div>
 
-  <!-- App Page (Hidden by default) -->
-  <div id="appPage" class="app-page" style="display: none;">
+  <!-- ===== APP PAGE ===== -->
+  <div id="appPage">
     <div class="container">
-      <!-- Header with User Info -->
-      <header class="header">
-        <div class="header-content">
+      <!-- Header -->
+      <div class="header">
+        <div>
+          <h1>🏆 Victory Tracker</h1>
+        </div>
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">👤</div>
           <div>
-            <h1>🏆 Victory Tracker</h1>
-            <p>Suivi des victoires et confrontations entre joueurs</p>
+            <div class="user-name" id="userName">Bienvenue!</div>
+            <button id="adminPanelBtn" class="btn-small btn-admin" onclick="toggleAdminPanel()" style="display: none;">Admin</button>
           </div>
-          <div class="user-info">
-            <img id="userAvatar" class="user-avatar" alt="Avatar">
-            <span id="userName" class="user-name"></span>
-            <button id="logoutBtn" class="btn btn-logout">Déconnexion</button>
+          <button id="logoutBtn" class="btn-small btn-logout">Déconnexion</button>
+        </div>
+      </div>
+
+      <!-- Admin Panel -->
+      <div id="adminPanel" class="section">
+        <div class="admin-panel-content">
+          <h3>🔐 Tableau de bord administrateur</h3>
+          <div id="pendingSignups">
+            <p>Chargement des demandes d'inscription...</p>
           </div>
         </div>
-      </header>
+      </div>
 
-      <!-- Main Content -->
-      <main class="main">
-        <!-- Section Ajouter Joueur -->
-        <section class="section">
-          <h2>➕ Ajouter un Joueur</h2>
-          <div class="form-group">
-            <input
-              type="text"
-              id="joueurNom"
-              placeholder="Nom du joueur"
-              class="input"
-            >
-            <button id="btnAjouterJoueur" class="btn btn-primary">Ajouter</button>
-          </div>
-          <div id="messageAjout" class="message"></div>
-        </section>
+      <!-- Add Player Section -->
+      <div class="section">
+        <h2>➕ Ajouter un joueur</h2>
+        <div class="form-row full">
+          <input type="text" id="joueurNom" placeholder="Nom du joueur" required>
+        </div>
+        <button id="btnAjouterJoueur" class="btn btn-primary">Ajouter</button>
+        <div id="messageAjout" class="message"></div>
+      </div>
 
-        <!-- Section Liste Joueurs -->
-        <section class="section">
-          <h2>👥 Joueurs</h2>
-          <div id="listeJoueurs" class="joueurs-list">
-            <p class="loading">Chargement...</p>
-          </div>
-        </section>
+      <!-- Players List -->
+      <div class="section">
+        <h2>👥 Liste des joueurs</h2>
+        <div id="listeJoueurs"></div>
+      </div>
 
-        <!-- Section Enregistrer Victoire -->
-        <section class="section">
-          <h2>⚔️ Enregistrer une Victoire</h2>
-          <div class="form-group">
-            <select id="joueur1" class="input">
-              <option value="">Sélectionner Joueur 1</option>
+      <!-- Add Victory Section -->
+      <div class="section">
+        <h2>⚔️ Enregistrer une victoire</h2>
+        <div class="form-row">
+          <div>
+            <label for="joueur1">Joueur 1</label>
+            <select id="joueur1" required>
+              <option value="">-- Sélectionner --</option>
             </select>
-            <select id="joueur2" class="input">
-              <option value="">Sélectionner Joueur 2</option>
+          </div>
+          <div>
+            <label for="joueur2">Joueur 2</label>
+            <select id="joueur2" required>
+              <option value="">-- Sélectionner --</option>
             </select>
-            <select id="gagnant" class="input">
-              <option value="">Sélectionner le Gagnant</option>
+          </div>
+        </div>
+        <div class="form-row">
+          <div>
+            <label for="gagnant">Gagnant</label>
+            <select id="gagnant" required>
+              <option value="">-- Sélectionner --</option>
             </select>
-            <button id="btnAjouterVictoire" class="btn btn-success">Enregistrer Victoire</button>
           </div>
-          <div id="messageVictoire" class="message"></div>
-        </section>
+        </div>
+        <button id="btnAjouterVictoire" class="btn btn-primary">Enregistrer la victoire</button>
+        <div id="messageVictoire" class="message"></div>
+      </div>
 
-        <!-- Section Tableau Confrontations -->
-        <section class="section">
-          <h2>📊 Tableau des Confrontations</h2>
-          <div id="tableauConfrontations" class="tableau">
-            <p class="loading">Chargement...</p>
-          </div>
-        </section>
+      <!-- Confrontations Table -->
+      <div class="section">
+        <h2>📊 Tableau des confrontations</h2>
+        <div id="tableauConfrontations">Aucun joueur encore</div>
+      </div>
 
-        <!-- Section Statistiques -->
-        <section class="section">
-          <h2>📈 Statistiques</h2>
-          <div id="statistiques" class="stats-grid">
-            <p class="loading">Chargement...</p>
-          </div>
-        </section>
+      <!-- Statistics -->
+      <div class="section">
+        <h2>📈 Statistiques</h2>
+        <div id="statistiques">Aucune donnée</div>
+      </div>
 
-        <!-- Historique Victoires -->
-        <section class="section">
-          <h2>📜 Historique des Victoires</h2>
-          <div id="historiqueVictoires" class="historique">
-            <p class="loading">Chargement...</p>
-          </div>
-        </section>
-      </main>
+      <!-- History -->
+      <div class="section">
+        <h2>📝 Historique des victoires</h2>
+        <div id="historiqueVictoires">Aucune victoire enregistrée</div>
+      </div>
     </div>
   </div>
 
