@@ -732,17 +732,29 @@
 
     async function loadUserProfile() {
       try {
+        console.log('📦 Loading profile for user:', currentUser.id)
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', currentUser.id)
           .single()
 
-        if (error) throw error
+        if (error) {
+          console.error('❌ Error loading profile:', error)
+          throw error
+        }
+
+        if (!data) {
+          console.warn('⚠️ Profile not found, creating default...')
+          userProfile = { id: currentUser.id, username: 'User', approved: false, is_admin: false }
+          return
+        }
+
         userProfile = data
         console.log('✅ User profile loaded:', userProfile)
       } catch (error) {
-        console.error('❌ Error loading profile:', error)
+        console.error('❌ Critical error loading profile:', error.message)
+        userProfile = { id: currentUser.id, username: 'User', approved: false, is_admin: false }
       }
     }
 
