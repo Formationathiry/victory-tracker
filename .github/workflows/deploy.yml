@@ -15,18 +15,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Debug - Show package.json
-        run: cat package.json | grep jsonwebtoken
-
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '24'
+          node-version: '18'
           cache: 'npm'
           cache-dependency-path: 'package.json'
-
-      - name: Clear npm cache
-        run: npm cache clean --force
 
       - name: Install dependencies
         run: npm install
