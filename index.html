@@ -342,6 +342,89 @@
       margin-bottom: 15px;
     }
 
+    .admin-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #ddd;
+    }
+
+    .admin-tab-btn {
+      background: none;
+      border: none;
+      padding: 10px 15px;
+      cursor: pointer;
+      color: #666;
+      border-bottom: 3px solid transparent;
+      transition: all 0.3s;
+    }
+
+    .admin-tab-btn.active {
+      color: #ffc107;
+      border-bottom-color: #ffc107;
+    }
+
+    .admin-tab-content {
+      display: none;
+    }
+
+    .admin-tab-content.active {
+      display: block;
+    }
+
+    .admin-user-item {
+      background: white;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 10px;
+      border-left: 4px solid #007bff;
+    }
+
+    .admin-user-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      cursor: pointer;
+    }
+
+    .admin-user-stats {
+      display: flex;
+      gap: 15px;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .admin-user-activities {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid #eee;
+    }
+
+    .admin-activity-item {
+      background: #f9f9f9;
+      padding: 10px;
+      border-radius: 3px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn-danger {
+      background: #dc3545;
+      color: white;
+      padding: 5px 10px;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .btn-danger:hover {
+      background: #c82333;
+    }
+
     .signup-request {
       background: white;
       padding: 15px;
@@ -416,7 +499,7 @@
       }
     }
   </style>
-  <script type="module" crossorigin src="/victory-tracker/assets/index-BM-1rDLi.js"></script>
+  <script type="module" crossorigin src="/victory-tracker/assets/index-BvrhK7mV.js"></script>
 </head>
 <body>
   <!-- ===== LOGIN PAGE ===== -->
@@ -507,11 +590,30 @@
       </div>
 
       <!-- Admin Panel -->
-      <div id="adminPanel" class="section">
+      <div id="adminPanel" class="section" style="display: none;">
         <div class="admin-panel-content">
           <h3>🔐 Tableau de bord administrateur</h3>
-          <div id="pendingSignups">
-            <p>Chargement des demandes d'inscription...</p>
+
+          <!-- Tabs -->
+          <div class="admin-tabs">
+            <button class="admin-tab-btn active" onclick="showAdminTab('signups')">📝 Inscriptions en attente</button>
+            <button class="admin-tab-btn" onclick="showAdminTab('users')">👥 Utilisateurs & Données</button>
+          </div>
+
+          <!-- Signups Tab -->
+          <div id="adminTabSignups" class="admin-tab-content active">
+            <div id="pendingSignups">
+              <p>Chargement des demandes d'inscription...</p>
+            </div>
+          </div>
+
+          <!-- Users Data Tab -->
+          <div id="adminTabUsers" class="admin-tab-content">
+            <div id="usersDataList" style="display: none;">
+              <input type="text" id="adminSearchUser" placeholder="Chercher un utilisateur..." style="margin-bottom: 15px; padding: 8px; width: 100%;">
+              <div id="adminUsersList"></div>
+            </div>
+            <div id="adminLoadingUsers">Chargement des utilisateurs...</div>
           </div>
         </div>
       </div>
