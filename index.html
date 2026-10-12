@@ -1762,7 +1762,7 @@
                 <small>👥 ${ligue.participant_count} participant(s)</small>
                 ${ligue.is_creator ? '<br><small style="color: #4CAF50; font-weight: bold;">👑 Vous créez cette ligue</small>' : ''}
               </div>
-              ${ligue.is_creator ? `<button class="btn btn-small" onclick="showLigueCode('${ligue.id}', '${ligue.name}')">🔗 Partager</button>` : ''}
+              ${ligue.is_creator ? `<button class="btn btn-small" onclick="showLigueCode('${ligue.id}', '${ligue.name}', '${ligue.invite_code}')">🔗 Partager</button>` : ''}
             </div>
           </div>
         `
@@ -1778,24 +1778,12 @@
       selectLigueDropdown.innerHTML = options
     }
 
-    async function showLigueCode(ligueId, ligueName) {
-      try {
-        const { data, error } = await supabase
-          .from('ligues')
-          .select('invite_code')
-          .eq('id', ligueId)
-          .single()
-
-        if (error) throw error
-
-        shareLeagueName.textContent = ligueName
-        shareLeagueCode.value = data.invite_code
-        copyFeedback.style.display = 'none'
-        shareLeagueModal.style.display = 'flex'
-      } catch (error) {
-        console.error('Error fetching invite code:', error)
-        alert('Erreur lors de la récupération du code')
-      }
+    function showLigueCode(ligueId, ligueName, inviteCode) {
+      shareLeagueName.textContent = ligueName
+      shareLeagueCode.value = inviteCode
+      copyFeedback.style.display = 'none'
+      btnCopyCode.textContent = '📋 Copier'
+      shareLeagueModal.style.display = 'flex'
     }
 
     function selectLigue(ligueId) {
