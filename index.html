@@ -342,6 +342,89 @@
       margin-bottom: 15px;
     }
 
+    .admin-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #ddd;
+    }
+
+    .admin-tab-btn {
+      background: none;
+      border: none;
+      padding: 10px 15px;
+      cursor: pointer;
+      color: #666;
+      border-bottom: 3px solid transparent;
+      transition: all 0.3s;
+    }
+
+    .admin-tab-btn.active {
+      color: #ffc107;
+      border-bottom-color: #ffc107;
+    }
+
+    .admin-tab-content {
+      display: none;
+    }
+
+    .admin-tab-content.active {
+      display: block;
+    }
+
+    .admin-user-item {
+      background: white;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 10px;
+      border-left: 4px solid #007bff;
+    }
+
+    .admin-user-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      cursor: pointer;
+    }
+
+    .admin-user-stats {
+      display: flex;
+      gap: 15px;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .admin-user-activities {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid #eee;
+    }
+
+    .admin-activity-item {
+      background: #f9f9f9;
+      padding: 10px;
+      border-radius: 3px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn-danger {
+      background: #dc3545;
+      color: white;
+      padding: 5px 10px;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .btn-danger:hover {
+      background: #c82333;
+    }
+
     .signup-request {
       background: white;
       padding: 15px;
@@ -506,11 +589,30 @@
       </div>
 
       <!-- Admin Panel -->
-      <div id="adminPanel" class="section">
+      <div id="adminPanel" class="section" style="display: none;">
         <div class="admin-panel-content">
           <h3>🔐 Tableau de bord administrateur</h3>
-          <div id="pendingSignups">
-            <p>Chargement des demandes d'inscription...</p>
+
+          <!-- Tabs -->
+          <div class="admin-tabs">
+            <button class="admin-tab-btn active" onclick="showAdminTab('signups')">📝 Inscriptions en attente</button>
+            <button class="admin-tab-btn" onclick="showAdminTab('users')">👥 Utilisateurs & Données</button>
+          </div>
+
+          <!-- Signups Tab -->
+          <div id="adminTabSignups" class="admin-tab-content active">
+            <div id="pendingSignups">
+              <p>Chargement des demandes d'inscription...</p>
+            </div>
+          </div>
+
+          <!-- Users Data Tab -->
+          <div id="adminTabUsers" class="admin-tab-content">
+            <div id="usersDataList" style="display: none;">
+              <input type="text" id="adminSearchUser" placeholder="Chercher un utilisateur..." style="margin-bottom: 15px; padding: 8px; width: 100%;">
+              <div id="adminUsersList"></div>
+            </div>
+            <div id="adminLoadingUsers">Chargement des utilisateurs...</div>
           </div>
         </div>
       </div>
@@ -1132,6 +1234,112 @@
         showMessage('messageAjout', 'Joueur supprimé!', 'success')
       } catch (error) {
         showMessage('messageAjout', 'Impossible de supprimer le joueur', 'error')
+      }
+    }
+
+    // ===== ADMIN FUNCTIONS =====
+    window.toggleAdminPanel = function() {
+      const panel = document.getElementById('adminPanel')
+      panel.style.display = panel.style.display === 'none' ? 'block' : 'none'
+      if (panel.style.display === 'block' && !window.adminDataLoaded) {
+        loadAdminUsersData()
+        window.adminDataLoaded = true
+      }
+    }
+
+    window.showAdminTab = function(tabName) {
+      // Hide all tabs
+      document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.remove('active'))
+      document.querySelectorAll('.admin-tab-btn').forEach(el => el.classList.remove('active'))
+
+      // Show selected tab
+      document.getElementById('adminTab' + tabName.charAt(0).toUpperCase() + tabName.slice(1)).classList.add('active')
+      event.target.classList.add('active')
+    }
+
+    async function loadAdminUsersData() {
+      try {
+        const { data, error } = await supabase.rpc('admin_get_users_data')
+        if (error) throw error
+
+        const usersList = document.getElementById('adminUsersList')
+        const loadingDiv = document.getElementById('adminLoadingUsers')
+
+        if (!data || data.length === 0) {
+          usersList.innerHTML = '<p>Aucun utilisateur</p>'
+          loadingDiv.style.display = 'none'
+          document.getElementById('usersDataList').style.display = 'block'
+          return
+        }
+
+        let html = ''
+        for (const user of data) {
+          const activities = await loadUserActivities(user.user_id)
+          html += `
+            <div class="admin-user-item">
+              <div class="admin-user-header" onclick="toggleUserActivities('${user.user_id}')">
+                <div>
+                  <strong>${user.username}</strong> (${user.email})
+                  ${user.approved ? '✅ Approuvé' : '⏳ En attente'}
+                </div>
+              </div>
+              <div class="admin-user-stats">
+                <span>🎯 ${user.activity_count} activité(s)</span>
+                <span>🎮 ${user.joueur_count} joueur(s)</span>
+                <span>📊 ${user.victoire_count} victoire(s)</span>
+              </div>
+              <div class="admin-user-activities" id="activities-${user.user_id}" style="display: none;">
+                ${activities.map(a => `
+                  <div class="admin-activity-item">
+                    <div>
+                      <strong>${a.activity_name}</strong><br>
+                      <small>🎮 ${a.joueur_count} joueurs | 📊 ${a.victoire_count} victoires</small>
+                    </div>
+                    <button class="btn-danger" onclick="adminDeleteActivity('${a.activity_id}', '${a.activity_name}')">Supprimer</button>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `
+        }
+
+        usersList.innerHTML = html
+        loadingDiv.style.display = 'none'
+        document.getElementById('usersDataList').style.display = 'block'
+      } catch (error) {
+        console.error('Error loading admin data:', error)
+      }
+    }
+
+    async function loadUserActivities(userId) {
+      try {
+        const { data, error } = await supabase.rpc('admin_get_user_activities', { p_user_id: userId })
+        if (error) throw error
+        return data || []
+      } catch (error) {
+        console.error('Error loading user activities:', error)
+        return []
+      }
+    }
+
+    window.toggleUserActivities = function(userId) {
+      const div = document.getElementById('activities-' + userId)
+      div.style.display = div.style.display === 'none' ? 'block' : 'none'
+    }
+
+    window.adminDeleteActivity = async function(activityId, activityName) {
+      if (!confirm(`Êtes-vous sûr de vouloir supprimer l'activité "${activityName}" et toutes ses données ?`)) return
+
+      try {
+        const { error } = await supabase.rpc('admin_delete_activity', { p_activity_id: activityId })
+        if (error) throw error
+
+        // Reload data
+        window.adminDataLoaded = false
+        loadAdminUsersData()
+        showMessage('adminLoadingUsers', 'Activité supprimée', 'success')
+      } catch (error) {
+        console.error('Error deleting activity:', error)
       }
     }
 
