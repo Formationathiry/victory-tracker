@@ -547,7 +547,7 @@
       background: #c0392b;
     }
   </style>
-  <script type="module" crossorigin src="/victory-tracker/assets/index-CTZzLDbL.js"></script>
+  <script type="module" crossorigin src="/victory-tracker/assets/index-BJ_ny4Si.js"></script>
 </head>
 <body>
   <!-- ===== LOGIN PAGE ===== -->
@@ -687,6 +687,20 @@
         <div id="mesLigues" style="display: none;">
           <h3>📋 Mes ligues</h3>
           <div id="mesligueslist"></div>
+        </div>
+
+        <!-- Select Ligue to Play -->
+        <div id="selectLigueSection" style="display: none; margin-top: 20px; padding: 15px; background: #fff3cd; border-radius: 8px;">
+          <h3 style="margin-top: 0;">🎯 Sélectionner une ligue</h3>
+          <div class="form-row">
+            <select id="selectLigueDropdown">
+              <option value="">-- Aucune (activité globale) --</option>
+            </select>
+          </div>
+          <div id="currentLigueInfo" style="display: none; margin-top: 10px; padding: 10px; background: white; border-radius: 4px;">
+            <strong id="currentLigueName"></strong>
+            <p id="currentLigueParticipants" style="font-size: 0.9em; color: #666; margin: 5px 0 0 0;"></p>
+          </div>
         </div>
 
         <!-- Join Ligue -->
