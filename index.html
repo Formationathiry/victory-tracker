@@ -688,6 +688,20 @@
           <div id="mesligueslist"></div>
         </div>
 
+        <!-- Select Ligue to Play -->
+        <div id="selectLigueSection" style="display: none; margin-top: 20px; padding: 15px; background: #fff3cd; border-radius: 8px;">
+          <h3 style="margin-top: 0;">🎯 Sélectionner une ligue</h3>
+          <div class="form-row">
+            <select id="selectLigueDropdown">
+              <option value="">-- Aucune (activité globale) --</option>
+            </select>
+          </div>
+          <div id="currentLigueInfo" style="display: none; margin-top: 10px; padding: 10px; background: white; border-radius: 4px;">
+            <strong id="currentLigueName"></strong>
+            <p id="currentLigueParticipants" style="font-size: 0.9em; color: #666; margin: 5px 0 0 0;"></p>
+          </div>
+        </div>
+
         <!-- Join Ligue -->
         <div style="margin-top: 20px; padding: 15px; background: #f0f8ff; border-radius: 8px;">
           <h3 style="margin-top: 0;">🔗 Rejoindre une ligue</h3>
@@ -792,6 +806,8 @@
 
     let activitySelect, newActivityName, btnCreateActivity, messageActivity
     let liguesSection, ligueName, ligueDescription, btnCreateLigue, messageLigue, inviteCode, btnJoinLigue, messageJoinLigue, mesLigues, mesligueslist
+    let selectLigueSection, selectLigueDropdown, currentLigueInfo, currentLigueName, currentLigueParticipants
+    let currentLigue = null
 
     function initializeDOMElements() {
       loginPage = document.getElementById('loginPage')
@@ -817,6 +833,11 @@
       messageJoinLigue = document.getElementById('messageJoinLigue')
       mesLigues = document.getElementById('mesLigues')
       mesligueslist = document.getElementById('mesligueslist')
+      selectLigueSection = document.getElementById('selectLigueSection')
+      selectLigueDropdown = document.getElementById('selectLigueDropdown')
+      currentLigueInfo = document.getElementById('currentLigueInfo')
+      currentLigueName = document.getElementById('currentLigueName')
+      currentLigueParticipants = document.getElementById('currentLigueParticipants')
 
       joueurNomInput = document.getElementById('joueurNom')
       btnAjouterJoueur = document.getElementById('btnAjouterJoueur')
@@ -1660,10 +1681,12 @@
     function afficherLigues() {
       if (ligues.length === 0) {
         mesLigues.style.display = 'none'
+        selectLigueSection.style.display = 'none'
         return
       }
 
       mesLigues.style.display = 'block'
+      selectLigueSection.style.display = 'block'
       let html = ''
 
       ligues.forEach(ligue => {
@@ -1682,6 +1705,13 @@
       })
 
       mesligueslist.innerHTML = html
+
+      // Remplir le dropdown de sélection de ligue
+      let options = '<option value="">-- Aucune (activité globale) --</option>'
+      ligues.forEach(ligue => {
+        options += `<option value="${ligue.id}">${ligue.name}</option>`
+      })
+      selectLigueDropdown.innerHTML = options
     }
 
     async function showLigueCode(ligueId, ligueName) {
@@ -1697,6 +1727,20 @@
         alert(`Code pour partager "${ligueName}":\n\n${data.invite_code}\n\nDonnez ce code à vos amis!`)
       } catch (error) {
         console.error('Error fetching invite code:', error)
+      }
+    }
+
+    function selectLigue(ligueId) {
+      if (!ligueId) {
+        currentLigue = null
+        currentLigueInfo.style.display = 'none'
+      } else {
+        currentLigue = ligues.find(l => l.id === ligueId)
+        if (currentLigue) {
+          currentLigueName.textContent = currentLigue.name
+          currentLigueParticipants.textContent = `👥 ${currentLigue.participant_count} participant(s)`
+          currentLigueInfo.style.display = 'block'
+        }
       }
     }
 
@@ -1912,6 +1956,10 @@
         joinLigue()
       })
 
+      selectLigueDropdown.addEventListener('change', (e) => {
+        selectLigue(e.target.value)
+      })
+
       // Auto-refresh on data changes
       supabase
         .channel('joueurs')
@@ -1934,6 +1982,7 @@
     // Make global functions available
     window.supprimerJoueur = supprimerJoueur
     window.logout = logout
+    window.showLigueCode = showLigueCode
   </script>
 </body>
 </html>
