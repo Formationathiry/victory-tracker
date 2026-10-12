@@ -547,7 +547,7 @@
       background: #c0392b;
     }
   </style>
-  <script type="module" crossorigin src="/victory-tracker/assets/index-B8d5eTyM.js"></script>
+  <script type="module" crossorigin src="/victory-tracker/assets/index-CTZzLDbL.js"></script>
 </head>
 <body>
   <!-- ===== LOGIN PAGE ===== -->
@@ -663,6 +663,41 @@
             </div>
             <div id="adminLoadingUsers">Chargement des utilisateurs...</div>
           </div>
+        </div>
+      </div>
+
+      <!-- Ligues Section -->
+      <div class="section" id="liguesSection" style="display: none;">
+        <h2>🏆 Ligues & Tournois</h2>
+
+        <!-- Create Ligue -->
+        <div style="margin-bottom: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px;">
+          <h3 style="margin-top: 0;">➕ Créer une ligue</h3>
+          <div class="form-row">
+            <input type="text" id="ligueName" placeholder="Nom de la ligue (ex: Tournoi novembre)" required>
+          </div>
+          <div class="form-row">
+            <textarea id="ligueDescription" placeholder="Description (optionnel)" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit;"></textarea>
+          </div>
+          <button id="btnCreateLigue" class="btn btn-primary">Créer une ligue</button>
+          <div id="messageLigue" class="message"></div>
+        </div>
+
+        <!-- My Ligues -->
+        <div id="mesLigues" style="display: none;">
+          <h3>📋 Mes ligues</h3>
+          <div id="mesligueslist"></div>
+        </div>
+
+        <!-- Join Ligue -->
+        <div style="margin-top: 20px; padding: 15px; background: #f0f8ff; border-radius: 8px;">
+          <h3 style="margin-top: 0;">🔗 Rejoindre une ligue</h3>
+          <p style="font-size: 0.9em; color: #666;">Demandez le code de ligue à quelqu'un</p>
+          <div class="form-row">
+            <input type="text" id="inviteCode" placeholder="Code d'invitation" maxlength="8" required>
+          </div>
+          <button id="btnJoinLigue" class="btn btn-primary">Rejoindre</button>
+          <div id="messageJoinLigue" class="message"></div>
         </div>
       </div>
 
