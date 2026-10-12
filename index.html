@@ -498,6 +498,54 @@
         grid-template-columns: 1fr;
       }
     }
+
+    /* Pending Victories Styling */
+    .victoire-pending-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      margin: 8px 0;
+      background: white;
+      border-left: 4px solid #4CAF50;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .victoire-pending-item strong {
+      color: #2c3e50;
+    }
+
+    .victoire-pending-item .vs {
+      margin: 0 8px;
+      color: #7f8c8d;
+      font-weight: bold;
+    }
+
+    .victoire-pending-item .winner {
+      background: #4CAF50;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.9em;
+      font-weight: bold;
+      margin: 0 8px;
+    }
+
+    .victoire-pending-item .remove-btn {
+      background: #e74c3c;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9em;
+      margin-left: 12px;
+    }
+
+    .victoire-pending-item .remove-btn:hover {
+      background: #c0392b;
+    }
   </style>
 </head>
 <body>
@@ -635,7 +683,7 @@
 
       <!-- Add Victory Section -->
       <div class="section">
-        <h2>⚔️ Enregistrer une victoire</h2>
+        <h2>⚔️ Enregistrer des victoires</h2>
         <div class="form-row">
           <div>
             <label for="joueur1">Joueur 1</label>
@@ -658,8 +706,18 @@
             </select>
           </div>
         </div>
-        <button id="btnAjouterVictoire" class="btn btn-primary">Enregistrer la victoire</button>
+        <div class="form-row">
+          <button id="btnAjouterVictoire" class="btn btn-primary">➕ Ajouter à la liste</button>
+          <button id="btnValiderVictoires" class="btn btn-success" style="display: none;">✓ Valider tout</button>
+          <button id="btnAnnulerVictoires" class="btn btn-secondary" style="display: none;">✕ Annuler</button>
+        </div>
         <div id="messageVictoire" class="message"></div>
+
+        <!-- Pending Victories List -->
+        <div id="victoiresPendantes" style="display: none; margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+          <h3>📋 En attente d'enregistrement (<span id="countPending">0</span>)</h3>
+          <div id="listeVictoiresPendantes" style="margin-top: 10px;"></div>
+        </div>
       </div>
 
       <!-- Confrontations Table -->
@@ -694,6 +752,7 @@
     let loginPage, appPage, logoutBtn, userName, userAvatar, adminPanelBtn, adminPanel
     let joueurNomInput, btnAjouterJoueur, messageAjout, listeJoueurs
     let joueur1Select, joueur2Select, gagnantSelect, btnAjouterVictoire, messageVictoire
+    let btnValiderVictoires, btnAnnulerVictoires, victoiresPendantes, listeVictoiresPendantes, countPending
     let tableauConfrontations, statistiques, historiqueVictoires, pendingSignups
 
     let activitySelect, newActivityName, btnCreateActivity, messageActivity
@@ -721,6 +780,11 @@
       joueur2Select = document.getElementById('joueur2')
       gagnantSelect = document.getElementById('gagnant')
       btnAjouterVictoire = document.getElementById('btnAjouterVictoire')
+      btnValiderVictoires = document.getElementById('btnValiderVictoires')
+      btnAnnulerVictoires = document.getElementById('btnAnnulerVictoires')
+      victoiresPendantes = document.getElementById('victoiresPendantes')
+      listeVictoiresPendantes = document.getElementById('listeVictoiresPendantes')
+      countPending = document.getElementById('countPending')
       messageVictoire = document.getElementById('messageVictoire')
 
       tableauConfrontations = document.getElementById('tableauConfrontations')
@@ -732,6 +796,7 @@
     // ===== État Global =====
     let joueurs = []
     let victoires = []
+    let pendingVictoires = []
     let currentUser = null
     let userProfile = null
     let activities = []
@@ -1343,36 +1408,122 @@
       }
     }
 
-    async function ajouterVictoire(joueur1Id, joueur2Id, gagnantId) {
+    function ajouterVictoireALaListe(joueur1Id, joueur2Id, gagnantId) {
+      if (!currentActivity) {
+        showMessage('messageVictoire', 'Veuillez d\'abord sélectionner une activité', 'error')
+        return
+      }
+
+      const j1 = joueurs.find(j => j.id === joueur1Id)
+      const j2 = joueurs.find(j => j.id === joueur2Id)
+      const gagnant = joueurs.find(j => j.id === gagnantId)
+
+      if (!j1 || !j2 || !gagnant) {
+        showMessage('messageVictoire', 'Joueurs invalides', 'error')
+        return
+      }
+
+      // Ajouter à la liste en attente
+      pendingVictoires.push({
+        joueur1_id: joueur1Id,
+        joueur2_id: joueur2Id,
+        gagnant_id: gagnantId,
+        joueur1_nom: j1.nom,
+        joueur2_nom: j2.nom,
+        gagnant_nom: gagnant.nom
+      })
+
+      // Réinitialiser le formulaire
+      joueur1Select.value = ''
+      joueur2Select.value = ''
+      gagnantSelect.value = ''
+
+      // Afficher la liste et les boutons
+      afficherVictoiresPendantes()
+      showMessage('messageVictoire', 'Victoire ajoutée à la liste!', 'success')
+    }
+
+    function afficherVictoiresPendantes() {
+      if (pendingVictoires.length === 0) {
+        victoiresPendantes.style.display = 'none'
+        btnValiderVictoires.style.display = 'none'
+        btnAnnulerVictoires.style.display = 'none'
+        return
+      }
+
+      victoiresPendantes.style.display = 'block'
+      btnValiderVictoires.style.display = 'inline-block'
+      btnAnnulerVictoires.style.display = 'inline-block'
+      countPending.textContent = pendingVictoires.length
+
+      let html = ''
+      pendingVictoires.forEach((v, index) => {
+        html += `
+          <div class="victoire-pending-item">
+            <div>
+              <strong>${v.joueur1_nom}</strong>
+              <span class="vs">vs</span>
+              <strong>${v.joueur2_nom}</strong>
+              <span class="winner">🏆 ${v.gagnant_nom}</span>
+            </div>
+            <button class="remove-btn" onclick="supprimerVictoirePendante(${index})">✕ Supprimer</button>
+          </div>
+        `
+      })
+      listeVictoiresPendantes.innerHTML = html
+    }
+
+    window.supprimerVictoirePendante = function(index) {
+      pendingVictoires.splice(index, 1)
+      afficherVictoiresPendantes()
+    }
+
+    async function validerVictoiresPendantes() {
+      if (pendingVictoires.length === 0) return
+
       try {
-        if (!currentActivity) {
-          showMessage('messageVictoire', 'Veuillez d\'abord sélectionner une activité', 'error')
-          return
-        }
+        const victoires_to_insert = pendingVictoires.map(v => ({
+          joueur1_id: v.joueur1_id,
+          joueur2_id: v.joueur2_id,
+          gagnant_id: v.gagnant_id,
+          user_id: currentUser.id,
+          activity_id: currentActivity.id
+        }))
 
         const { data, error } = await supabase
           .from('victoires')
-          .insert([{
-            joueur1_id: joueur1Id,
-            joueur2_id: joueur2Id,
-            gagnant_id: gagnantId,
-            user_id: currentUser.id,
-            activity_id: currentActivity.id
-          }])
+          .insert(victoires_to_insert)
           .select()
 
         if (error) throw error
-        victoires.unshift(data[0])
+
+        // Ajouter à l'array global
+        victoires.unshift(...data)
+
+        // Nettoyer la liste en attente
+        pendingVictoires = []
+        afficherVictoiresPendantes()
+
+        // Mettre à jour l'affichage
         afficherTableauConfrontations()
         afficherStatistiques()
         afficherHistorique()
-        showMessage('messageVictoire', 'Victoire enregistrée!', 'success')
-        joueur1Select.value = ''
-        joueur2Select.value = ''
-        gagnantSelect.value = ''
+
+        showMessage('messageVictoire', `${data.length} victoire(s) enregistrée(s)!`, 'success')
       } catch (error) {
         showMessage('messageVictoire', 'Erreur: ' + error.message, 'error')
       }
+    }
+
+    function annulerVictoiresPendantes() {
+      pendingVictoires = []
+      afficherVictoiresPendantes()
+      showMessage('messageVictoire', 'Liste vidée', 'info')
+    }
+
+    async function ajouterVictoire(joueur1Id, joueur2Id, gagnantId) {
+      // Nouvelle version: ajoute à la liste
+      ajouterVictoireALaListe(joueur1Id, joueur2Id, gagnantId)
     }
 
     // ===== UI FUNCTIONS =====
@@ -1567,6 +1718,14 @@
         if (j1 && j2 && g && j1 !== j2) {
           ajouterVictoire(j1, j2, g)
         }
+      })
+
+      btnValiderVictoires.addEventListener('click', () => {
+        validerVictoiresPendantes()
+      })
+
+      btnAnnulerVictoires.addEventListener('click', () => {
+        annulerVictoiresPendantes()
       })
 
       // Auto-refresh on data changes
