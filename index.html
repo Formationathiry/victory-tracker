@@ -946,20 +946,35 @@
 
     async function createActivity(name) {
       try {
-        if (!name.trim()) {
+        const trimmedName = name.trim()
+        if (!trimmedName) {
           showMessage('messageActivity', 'Le nom de l\'activité ne peut pas être vide', 'error')
+          return
+        }
+
+        // Check if activity with same name already exists
+        const activityExists = activities.some(a => a.name.toLowerCase() === trimmedName.toLowerCase())
+        if (activityExists) {
+          showMessage('messageActivity', `Une activité "${trimmedName}" existe déjà`, 'error')
           return
         }
 
         const { data, error } = await supabase
           .from('activities')
           .insert([{
-            name: name.trim(),
+            name: trimmedName,
             user_id: currentUser.id
           }])
           .select()
 
-        if (error) throw error
+        if (error) {
+          // Handle unique constraint error from database
+          if (error.code === '23505' || error.message.includes('duplicate')) {
+            showMessage('messageActivity', `Une activité "${trimmedName}" existe déjà`, 'error')
+            return
+          }
+          throw error
+        }
 
         activities.push(data[0])
         newActivityName.value = ''
