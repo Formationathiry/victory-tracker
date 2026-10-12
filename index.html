@@ -546,6 +546,23 @@
     .victoire-pending-item .remove-btn:hover {
       background: #c0392b;
     }
+
+    /* ===== SHARE MODAL ===== */
+    #shareLeagueModal[style*="display: flex"] {
+      display: flex !important;
+    }
+
+    #shareLeagueModal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
   </style>
 </head>
 <body>
@@ -714,6 +731,21 @@
         </div>
       </div>
 
+      <!-- Share League Code Modal -->
+      <div id="shareLeagueModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+        <div style="background: white; padding: 30px; border-radius: 10px; max-width: 400px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+          <h2 style="margin-top: 0; color: #333;">🔗 Partager la ligue</h2>
+          <p id="shareLeagueName" style="font-size: 1.1em; font-weight: bold; margin: 10px 0; color: #667eea;"></p>
+          <p style="color: #666; margin: 15px 0;">Donnez ce code à vos amis pour qu'ils rejoignent:</p>
+          <div style="display: flex; gap: 10px; margin: 20px 0;">
+            <input type="text" id="shareLeagueCode" readonly style="flex: 1; padding: 12px; border: 2px solid #ddd; border-radius: 4px; font-size: 1.2em; font-weight: bold; font-family: monospace; background: #f5f5f5;">
+            <button id="btnCopyCode" style="padding: 12px 20px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">📋 Copier</button>
+          </div>
+          <p id="copyFeedback" style="text-align: center; color: #4CAF50; font-size: 0.9em; display: none; margin: 10px 0;">✅ Code copié!</p>
+          <button id="btnCloseShareModal" style="width: 100%; padding: 10px; background: #ddd; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Fermer</button>
+        </div>
+      </div>
+
       <!-- Add Player Section -->
       <div class="section">
         <h2>➕ Ajouter un joueur</h2>
@@ -807,6 +839,7 @@
     let activitySelect, newActivityName, btnCreateActivity, messageActivity
     let liguesSection, ligueName, ligueDescription, btnCreateLigue, messageLigue, inviteCode, btnJoinLigue, messageJoinLigue, mesLigues, mesligueslist
     let selectLigueSection, selectLigueDropdown, currentLigueInfo, currentLigueName, currentLigueParticipants
+    let shareLeagueModal, shareLeagueName, shareLeagueCode, btnCopyCode, btnCloseShareModal, copyFeedback
     let currentLigue = null
 
     function initializeDOMElements() {
@@ -838,6 +871,12 @@
       currentLigueInfo = document.getElementById('currentLigueInfo')
       currentLigueName = document.getElementById('currentLigueName')
       currentLigueParticipants = document.getElementById('currentLigueParticipants')
+      shareLeagueModal = document.getElementById('shareLeagueModal')
+      shareLeagueName = document.getElementById('shareLeagueName')
+      shareLeagueCode = document.getElementById('shareLeagueCode')
+      btnCopyCode = document.getElementById('btnCopyCode')
+      btnCloseShareModal = document.getElementById('btnCloseShareModal')
+      copyFeedback = document.getElementById('copyFeedback')
 
       joueurNomInput = document.getElementById('joueurNom')
       btnAjouterJoueur = document.getElementById('btnAjouterJoueur')
@@ -1749,9 +1788,13 @@
 
         if (error) throw error
 
-        alert(`Code pour partager "${ligueName}":\n\n${data.invite_code}\n\nDonnez ce code à vos amis!`)
+        shareLeagueName.textContent = ligueName
+        shareLeagueCode.value = data.invite_code
+        copyFeedback.style.display = 'none'
+        shareLeagueModal.style.display = 'flex'
       } catch (error) {
         console.error('Error fetching invite code:', error)
+        alert('Erreur lors de la récupération du code')
       }
     }
 
@@ -1987,6 +2030,37 @@
 
       selectLigueDropdown.addEventListener('change', (e) => {
         selectLigue(e.target.value)
+      })
+
+      // Share league modal events
+      btnCopyCode.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(shareLeagueCode.value)
+          copyFeedback.style.display = 'block'
+          btnCopyCode.textContent = '✅ Copié!'
+          setTimeout(() => {
+            copyFeedback.style.display = 'none'
+            btnCopyCode.textContent = '📋 Copier'
+          }, 2000)
+        } catch (err) {
+          // Fallback for older browsers
+          shareLeagueCode.select()
+          document.execCommand('copy')
+          copyFeedback.style.display = 'block'
+          setTimeout(() => {
+            copyFeedback.style.display = 'none'
+          }, 2000)
+        }
+      })
+
+      btnCloseShareModal.addEventListener('click', () => {
+        shareLeagueModal.style.display = 'none'
+      })
+
+      shareLeagueModal.addEventListener('click', (e) => {
+        if (e.target === shareLeagueModal) {
+          shareLeagueModal.style.display = 'none'
+        }
       })
 
       // Auto-refresh on data changes
