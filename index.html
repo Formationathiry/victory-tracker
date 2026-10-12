@@ -665,6 +665,41 @@
         </div>
       </div>
 
+      <!-- Ligues Section -->
+      <div class="section" id="liguesSection" style="display: none;">
+        <h2>🏆 Ligues & Tournois</h2>
+
+        <!-- Create Ligue -->
+        <div style="margin-bottom: 20px; padding: 15px; background: #f9f9f9; border-radius: 8px;">
+          <h3 style="margin-top: 0;">➕ Créer une ligue</h3>
+          <div class="form-row">
+            <input type="text" id="ligueName" placeholder="Nom de la ligue (ex: Tournoi novembre)" required>
+          </div>
+          <div class="form-row">
+            <textarea id="ligueDescription" placeholder="Description (optionnel)" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit;"></textarea>
+          </div>
+          <button id="btnCreateLigue" class="btn btn-primary">Créer une ligue</button>
+          <div id="messageLigue" class="message"></div>
+        </div>
+
+        <!-- My Ligues -->
+        <div id="mesLigues" style="display: none;">
+          <h3>📋 Mes ligues</h3>
+          <div id="mesligueslist"></div>
+        </div>
+
+        <!-- Join Ligue -->
+        <div style="margin-top: 20px; padding: 15px; background: #f0f8ff; border-radius: 8px;">
+          <h3 style="margin-top: 0;">🔗 Rejoindre une ligue</h3>
+          <p style="font-size: 0.9em; color: #666;">Demandez le code de ligue à quelqu'un</p>
+          <div class="form-row">
+            <input type="text" id="inviteCode" placeholder="Code d'invitation" maxlength="8" required>
+          </div>
+          <button id="btnJoinLigue" class="btn btn-primary">Rejoindre</button>
+          <div id="messageJoinLigue" class="message"></div>
+        </div>
+      </div>
+
       <!-- Add Player Section -->
       <div class="section">
         <h2>➕ Ajouter un joueur</h2>
@@ -756,6 +791,7 @@
     let tableauConfrontations, statistiques, historiqueVictoires, pendingSignups
 
     let activitySelect, newActivityName, btnCreateActivity, messageActivity
+    let liguesSection, ligueName, ligueDescription, btnCreateLigue, messageLigue, inviteCode, btnJoinLigue, messageJoinLigue, mesLigues, mesligueslist
 
     function initializeDOMElements() {
       loginPage = document.getElementById('loginPage')
@@ -770,6 +806,17 @@
       newActivityName = document.getElementById('newActivityName')
       btnCreateActivity = document.getElementById('btnCreateActivity')
       messageActivity = document.getElementById('messageActivity')
+
+      liguesSection = document.getElementById('liguesSection')
+      ligueName = document.getElementById('ligueName')
+      ligueDescription = document.getElementById('ligueDescription')
+      btnCreateLigue = document.getElementById('btnCreateLigue')
+      messageLigue = document.getElementById('messageLigue')
+      inviteCode = document.getElementById('inviteCode')
+      btnJoinLigue = document.getElementById('btnJoinLigue')
+      messageJoinLigue = document.getElementById('messageJoinLigue')
+      mesLigues = document.getElementById('mesLigues')
+      mesligueslist = document.getElementById('mesligueslist')
 
       joueurNomInput = document.getElementById('joueurNom')
       btnAjouterJoueur = document.getElementById('btnAjouterJoueur')
@@ -801,6 +848,7 @@
     let userProfile = null
     let activities = []
     let currentActivity = null
+    let ligues = []
 
     // ===== AUTH FUNCTIONS =====
 
@@ -1166,6 +1214,8 @@
           currentActivity = null
           joueurs = []
           victoires = []
+          ligues = []
+          liguesSection.style.display = 'none'
           afficherJoueurs()
           afficherTableauConfrontations()
           afficherStatistiques()
@@ -1175,6 +1225,9 @@
 
         currentActivity = activities.find(a => a.id === activityId)
         console.log('Selected activity:', currentActivity)
+
+        // Show ligues section
+        liguesSection.style.display = 'block'
 
         // Load data for this activity
         chargerDonnees()
@@ -1526,11 +1579,133 @@
       ajouterVictoireALaListe(joueur1Id, joueur2Id, gagnantId)
     }
 
+    // ===== LIGUE FUNCTIONS =====
+
+    async function createLigue() {
+      if (!currentActivity) {
+        showMessage('messageLigue', 'Sélectionnez une activité d\'abord', 'error')
+        return
+      }
+
+      const name = ligueName.value.trim()
+      const description = ligueDescription.value.trim()
+
+      if (!name) {
+        showMessage('messageLigue', 'Le nom de la ligue est requis', 'error')
+        return
+      }
+
+      try {
+        const { data, error } = await supabase.rpc('create_ligue', {
+          p_activity_id: currentActivity.id,
+          p_name: name,
+          p_description: description
+        })
+
+        if (error) throw error
+
+        showMessage('messageLigue', `Ligue créée! Code: ${data[0].invite_code}`, 'success')
+        ligueName.value = ''
+        ligueDescription.value = ''
+        await fetchLigues()
+      } catch (error) {
+        showMessage('messageLigue', 'Erreur: ' + error.message, 'error')
+      }
+    }
+
+    async function joinLigue() {
+      const code = inviteCode.value.trim().toUpperCase()
+
+      if (!code) {
+        showMessage('messageJoinLigue', 'Entrez un code d\'invitation', 'error')
+        return
+      }
+
+      try {
+        const { data, error } = await supabase.rpc('join_ligue_by_code', {
+          p_invite_code: code
+        })
+
+        if (error) throw error
+
+        if (data[0].success) {
+          showMessage('messageJoinLigue', data[0].message, 'success')
+          inviteCode.value = ''
+          await fetchLigues()
+        } else {
+          showMessage('messageJoinLigue', data[0].message, 'error')
+        }
+      } catch (error) {
+        showMessage('messageJoinLigue', 'Erreur: ' + error.message, 'error')
+      }
+    }
+
+    async function fetchLigues() {
+      if (!currentActivity) return
+
+      try {
+        const { data, error } = await supabase.rpc('get_activity_ligues', {
+          p_activity_id: currentActivity.id
+        })
+
+        if (error) throw error
+
+        ligues = data || []
+        afficherLigues()
+      } catch (error) {
+        console.error('Error fetching ligues:', error)
+      }
+    }
+
+    function afficherLigues() {
+      if (ligues.length === 0) {
+        mesLigues.style.display = 'none'
+        return
+      }
+
+      mesLigues.style.display = 'block'
+      let html = ''
+
+      ligues.forEach(ligue => {
+        html += `
+          <div style="padding: 12px; margin: 8px 0; background: white; border: 1px solid #ddd; border-radius: 6px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong>${ligue.name}</strong><br>
+                <small>👥 ${ligue.participant_count} participant(s)</small>
+                ${ligue.is_creator ? '<br><small style="color: #4CAF50; font-weight: bold;">👑 Vous créez cette ligue</small>' : ''}
+              </div>
+              ${ligue.is_creator ? `<button class="btn btn-small" onclick="showLigueCode('${ligue.id}', '${ligue.name}')">🔗 Partager</button>` : ''}
+            </div>
+          </div>
+        `
+      })
+
+      mesligueslist.innerHTML = html
+    }
+
+    async function showLigueCode(ligueId, ligueName) {
+      try {
+        const { data, error } = await supabase
+          .from('ligues')
+          .select('invite_code')
+          .eq('id', ligueId)
+          .single()
+
+        if (error) throw error
+
+        alert(`Code pour partager "${ligueName}":\n\n${data.invite_code}\n\nDonnez ce code à vos amis!`)
+      } catch (error) {
+        console.error('Error fetching invite code:', error)
+      }
+    }
+
     // ===== UI FUNCTIONS =====
 
     function chargerDonnees() {
       fetchJoueurs()
       fetchVictoires()
+      fetchLigues()
     }
 
     function mettreAJourSelects() {
@@ -1726,6 +1901,15 @@
 
       btnAnnulerVictoires.addEventListener('click', () => {
         annulerVictoiresPendantes()
+      })
+
+      // Ligue events
+      btnCreateLigue.addEventListener('click', () => {
+        createLigue()
+      })
+
+      btnJoinLigue.addEventListener('click', () => {
+        joinLigue()
       })
 
       // Auto-refresh on data changes
