@@ -1268,29 +1268,41 @@
           return
         }
 
-        // Fetch joueurs for current activity
-        const { data: activityJoueurs, error: error1 } = await supabase
-          .from('joueurs')
-          .select('*')
-          .eq('user_id', currentUser.id)
-          .eq('activity_id', currentActivity.id)
-          .order('nom', { ascending: true })
+        // If a league is selected, fetch only league joueurs
+        if (currentLigue) {
+          const { data: ligueJoueurs, error } = await supabase
+            .from('joueurs')
+            .select('*')
+            .eq('ligue_id', currentLigue.id)
+            .order('nom', { ascending: true })
 
-        // Fetch global joueurs (without activity)
-        const { data: globalJoueurs, error: error2 } = await supabase
-          .from('joueurs')
-          .select('*')
-          .eq('user_id', currentUser.id)
-          .is('activity_id', null)
-          .order('nom', { ascending: true })
+          if (error) throw error
+          joueurs = ligueJoueurs || []
+        } else {
+          // Fetch joueurs for current activity
+          const { data: activityJoueurs, error: error1 } = await supabase
+            .from('joueurs')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .eq('activity_id', currentActivity.id)
+            .order('nom', { ascending: true })
 
-        if (error1 || error2) throw error1 || error2
+          // Fetch global joueurs (without activity)
+          const { data: globalJoueurs, error: error2 } = await supabase
+            .from('joueurs')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .is('activity_id', null)
+            .order('nom', { ascending: true })
 
-        // Combine both lists - add a flag to distinguish them
-        joueurs = [
-          ...(activityJoueurs || []),
-          ...(globalJoueurs || []).map(j => ({ ...j, isGlobal: true }))
-        ]
+          if (error1 || error2) throw error1 || error2
+
+          // Combine both lists - add a flag to distinguish them
+          joueurs = [
+            ...(activityJoueurs || []),
+            ...(globalJoueurs || []).map(j => ({ ...j, isGlobal: true }))
+          ]
+        }
 
         mettreAJourSelects()
         afficherJoueurs()
@@ -1309,12 +1321,20 @@
           return
         }
 
-        const { data, error } = await supabase
+        let query = supabase
           .from('victoires')
           .select('*')
           .eq('user_id', currentUser.id)
-          .eq('activity_id', currentActivity.id)
           .order('created_at', { ascending: false })
+
+        // If a league is selected, fetch only league victoires
+        if (currentLigue) {
+          query = query.eq('ligue_id', currentLigue.id)
+        } else {
+          query = query.eq('activity_id', currentActivity.id)
+        }
+
+        const { data, error } = await query
 
         if (error) throw error
         victoires = data || []
@@ -1504,7 +1524,9 @@
         gagnant_id: gagnantId,
         joueur1_nom: j1.nom,
         joueur2_nom: j2.nom,
-        gagnant_nom: gagnant.nom
+        gagnant_nom: gagnant.nom,
+        ligue_id: currentLigue ? currentLigue.id : null,
+        activity_id: currentActivity.id
       })
 
       // Réinitialiser le formulaire
@@ -1532,6 +1554,7 @@
 
       let html = ''
       pendingVictoires.forEach((v, index) => {
+        const contexte = v.ligue_id ? `<span style="font-size: 0.8em; color: #666;">🏆 ${currentLigue?.name || 'Ligue'}</span>` : '<span style="font-size: 0.8em; color: #666;">📊 Activité</span>'
         html += `
           <div class="victoire-pending-item">
             <div>
@@ -1539,6 +1562,7 @@
               <span class="vs">vs</span>
               <strong>${v.joueur2_nom}</strong>
               <span class="winner">🏆 ${v.gagnant_nom}</span>
+              <br>${contexte}
             </div>
             <button class="remove-btn" onclick="supprimerVictoirePendante(${index})">✕ Supprimer</button>
           </div>
@@ -1561,7 +1585,8 @@
           joueur2_id: v.joueur2_id,
           gagnant_id: v.gagnant_id,
           user_id: currentUser.id,
-          activity_id: currentActivity.id
+          activity_id: v.activity_id || currentActivity.id,
+          ligue_id: v.ligue_id || null
         }))
 
         const { data, error } = await supabase
@@ -1742,6 +1767,10 @@
           currentLigueInfo.style.display = 'block'
         }
       }
+
+      // Reload data for selected league
+      fetchJoueurs()
+      fetchVictoires()
     }
 
     // ===== UI FUNCTIONS =====
